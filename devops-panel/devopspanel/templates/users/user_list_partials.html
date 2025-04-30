@@ -1,0 +1,77 @@
+<!-- user_list_partials.html -->
+<div class="accordion-item">
+    <h2 class="accordion-header d-flex justify-content-between align-items-center" id="heading{{ user.id }}">
+        <button class="accordion-button collapsed flex-grow-1" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ user.id }}" aria-expanded="false" aria-controls="collapse{{ user.id }}">
+            <i class="fas fa-user me-2"></i> {{ user.username }}
+        </button>
+        <span>
+            <i class="fas fa-toggle-off status-icon text-secondary" data-user-id="{{ user.id }}" data-bs-toggle="tooltip" title="User Status"></i>
+        </span>
+    </h2>
+    <div id="collapse{{ user.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ user.id }}" data-bs-parent="#userAccordion">
+        <div class="accordion-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Email:</strong> {{ user.email }}</p>
+                    <p><strong>Administrator:</strong> {{ user.is_staff|yesno:"Yes,No" }}</p>
+                    <p><strong>Last Login:</strong>
+                        {% if user.last_login %}
+                            <span class="last-login" data-utc="{{ user.last_login|date:"c" }}"></span>
+                        {% else %}
+                            <span class="text-muted">Never</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Status:</strong>
+                        <span class="user-status badge" data-user-id="{{ user.id }}">
+                            <i class="fas fa-spinner fa-spin"></i>
+                        </span>
+                    </p>
+                    <p><strong>Roles:</strong>
+                        {% for role in user.roles.all %}
+                            <span class="badge bg-info text-dark">{{ role.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">No Roles</span>
+                        {% endfor %}
+                    </p>
+                    <p><strong>Environments:</strong>
+                        {% for env in user.environments.all %}
+                            <span class="badge bg-primary">{{ env.name }}</span>
+                        {% empty %}
+                            <span class="text-muted">No Environments</span>
+                        {% endfor %}
+                    </p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <a href="{% url 'users:edit_user' user.id %}" class="btn btn-warning btn-sm me-2" aria-label="Edit {{ user.username }}" data-bs-toggle="tooltip" title="Edit">
+                        <i class="fas fa-edit"></i> Edit
+                    </a>
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteUserModal{{ user.id }}" aria-label="Delete {{ user.username }}" data-bs-toggle="tooltip" title="Delete">
+                        <i class="fas fa-trash-alt"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteUserModal{{ user.id }}" tabindex="-1" aria-labelledby="deleteUserModalLabel{{ user.id }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title" id="deleteUserModalLabel{{ user.id }}">Delete User</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to delete user <strong>{{ user.username }}</strong>?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <form method="post" action="{% url 'users:delete_user' user.id %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Delete</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,176 @@
+<!-- user_list.html -->
+{% extends 'vertical_base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load dict_extras %}
+{% load tree_tags %}
+{% load i18n %}
+
+{% block title %}User Management{% endblock %}
+
+{% block page_content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Users</h2>
+        <div>
+            <a href="{% url 'users:add_user' %}" class="btn btn-success">
+                <i class="fas fa-user-plus me-2"></i> Create User
+            </a>
+        </div>
+    </div>
+
+    <div id="userAccordion" class="accordion">
+        {% for user in users %}
+            {% include 'users/user_list_partials.html' with user=user %}
+        {% endfor %}
+    </div>
+
+    <!-- Show More Button -->
+    {% if users.has_next %}
+    <div class="text-center my-4">
+        <button id="showMoreBtn" class="btn btn-primary">Show More</button>
+    </div>
+    {% endif %}
+
+    <!-- Loader -->
+    <div id="loader" class="text-center my-4" style="display: none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+    </div>
+
+    <!-- End Message -->
+    <div id="endMessage" class="alert alert-info text-center" style="display: none;">
+        No more users to load.
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        let page = 2;
+        let hasNext = {{ users.has_next|yesno:"true,false" }};
+        const showMoreBtn = document.getElementById('showMoreBtn');
+        const loader = document.getElementById('loader');
+        const endMessage = document.getElementById('endMessage');
+        const userAccordion = document.getElementById('userAccordion');
+
+        function loadMoreUsers() {
+            if (!hasNext) return;
+            showMoreBtn.disabled = true;
+            loader.style.display = 'block';
+
+            fetch(`{% url 'users:user_list' %}?page=${page}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                loader.style.display = 'none';
+                if (data.html.trim() !== '') {
+                    userAccordion.insertAdjacentHTML('beforeend', data.html);
+                    hasNext = data.has_next;
+                    page += 1;
+                    initializeTooltips();
+                    convertLastLogin();
+                    updateUserStatuses();
+                    if (!hasNext) {
+                        showMoreBtn.style.display = 'none';
+                        endMessage.style.display = 'block';
+                    } else {
+                        showMoreBtn.disabled = false;
+                    }
+                } else {
+                    hasNext = false;
+                    showMoreBtn.style.display = 'none';
+                    endMessage.style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading more users:', error);
+                loader.style.display = 'none';
+                showMoreBtn.disabled = false;
+            });
+        }
+
+        function initializeTooltips() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+        }
+
+        function convertLastLogin() {
+            const lastLoginElements = document.querySelectorAll('.last-login');
+            lastLoginElements.forEach(function(elem) {
+                const utcTime = elem.getAttribute('data-utc');
+                if (utcTime) {
+                    const date = new Date(utcTime);
+                    if (!isNaN(date)) {
+                        elem.textContent = date.toLocaleString();
+                    } else {
+                        elem.textContent = 'Invalid date';
+                    }
+                }
+            });
+        }
+
+        function updateUserStatuses() {
+            const headerStatusIcons = document.querySelectorAll('.status-icon');
+            const headerUserIds = Array.from(headerStatusIcons).map(elem => elem.getAttribute('data-user-id'));
+
+            const bodyStatusSpans = document.querySelectorAll('.user-status');
+            const bodyUserIds = Array.from(bodyStatusSpans).map(elem => elem.getAttribute('data-user-id'));
+
+            const allUserIds = [...new Set([...headerUserIds, ...bodyUserIds])];
+            if (allUserIds.length === 0) return;
+
+            let params = new URLSearchParams();
+            allUserIds.forEach(id => params.append('user_ids[]', id));
+            let url = `{% url 'users:get_user_statuses' %}?` + params.toString();
+
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.statuses) {
+                        headerStatusIcons.forEach(elem => {
+                            const userId = elem.getAttribute('data-user-id');
+                            const isOnline = data.statuses[userId];
+                            if (isOnline) {
+                                elem.classList.remove('text-danger', 'text-secondary', 'fa-spin', 'fa-spinner');
+                                elem.classList.add('text-success', 'fa-toggle-on');
+                            } else {
+                                elem.classList.remove('text-success', 'text-secondary', 'fa-spin', 'fa-spinner');
+                                elem.classList.add('text-danger', 'fa-toggle-off');
+                            }
+                        });
+
+                        bodyStatusSpans.forEach(elem => {
+                            const userId = elem.getAttribute('data-user-id');
+                            const isOnline = data.statuses[userId];
+                            if (isOnline) {
+                                elem.innerHTML = '<i class="fas fa-circle text-success"></i> Online';
+                            } else {
+                                elem.innerHTML = '<i class="fas fa-circle text-danger"></i> Offline';
+                            }
+                        });
+                    }
+                })
+                .catch(error => console.error('Error fetching user statuses:', error));
+        }
+
+        setInterval(updateUserStatuses, 60000);
+
+        if (showMoreBtn) {
+            showMoreBtn.addEventListener('click', loadMoreUsers);
+        }
+
+        initializeTooltips();
+        convertLastLogin();
+        updateUserStatuses();
+    });
+</script>
+{% endblock %}

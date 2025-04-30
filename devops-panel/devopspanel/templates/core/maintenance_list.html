@@ -1,0 +1,53 @@
+<!-- core/templates/core/maintenance_list.html -->
+
+{% extends 'vertical_base.html' %}
+{% load static %}
+
+{% block title %}Maintenance List{% endblock %}
+
+{% block page_content %}
+<div class="container mt-5">
+    <h2>Maintenance List</h2>
+    <a href="{% url 'core:maintenance_create' %}" class="btn btn-primary mb-3">Create New Maintenance</a>
+    {% if maintenances %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Executive</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Status</th>
+                    <th>Service Buttons</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for maintenance in maintenances %}
+                    <tr>
+                        <td>{{ maintenance.title }}</td>
+                        <td>{{ maintenance.executive.get_full_name }}</td>
+                        <td>{{ maintenance.start_time }}</td>
+                        <td>{{ maintenance.end_time }}</td>
+                        <td>{{ maintenance.get_status_display }}</td>
+                        <td>
+                            {% for btn in maintenance.service_buttons.all %}
+                                <span class="badge bg-info text-dark">{{ btn.name }}</span>
+                            {% empty %}
+                                <span class="text-muted">No Service Buttons</span>
+                            {% endfor %}
+                        </td>
+                        <td>
+                            <a href="{% url 'core:maintenance_edit' maintenance.id %}" class="btn btn-sm btn-warning">Edit</a>
+                            <a href="{% url 'core:maintenance_delete' maintenance.id %}" class="btn btn-sm btn-danger">Delete</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No Maintenance events available.</p>
+    {% endif %}
+</div>
+{% endblock %}
+

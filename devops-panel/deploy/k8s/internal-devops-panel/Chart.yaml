@@ -1,0 +1,6 @@
+apiVersion: v2
+name: gfm-internal-devops-panel
+description: A Helm chart for deploying Internal DevOps Panel Django application
+type: application
+version: 0.1.0
+appVersion: "1.0"

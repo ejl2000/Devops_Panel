@@ -1,0 +1,18 @@
+<!-- core/templates/core/tag_form.html -->
+
+{% extends 'vertical_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid mb-5">
+    <h2 class="mb-4">{{ title }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <a href="{% url 'core:tag_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-success">Save</button>
+    </form>
+</div>
+{% endblock %}

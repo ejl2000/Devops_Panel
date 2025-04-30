@@ -1,0 +1,8 @@
+<!-- core/templates/core/widgets/taggable_select.html -->
+<select name="{{ widget.name }}" {% include "django/forms/widgets/attrs.html" %}>
+    {% for option in widget.optgroups %}
+        {% for opt in option.1 %}
+            <option value="{{ opt.value }}" {% if opt.selected %}selected{% endif %}>{{ opt.label }}</option>
+        {% endfor %}
+    {% endfor %}
+</select>

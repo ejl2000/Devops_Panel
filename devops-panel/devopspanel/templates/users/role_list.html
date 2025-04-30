@@ -1,0 +1,99 @@
+<!-- role_list.html -->
+{% extends 'vertical_base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load dict_extras %}
+{% load tree_tags %}
+{% load i18n %}
+
+{% block title %}Manage Roles{% endblock %}
+
+{% block page_content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Roles</h2>
+        <div>
+            <a href="{% url 'users:add_role' %}" class="btn btn-success">
+                <i class="fas fa-plus-circle me-2"></i> Add Role
+            </a>
+        </div>
+    </div>
+
+    {% if roles %}
+    <div class="accordion" id="roleAccordion">
+        {% for role in roles %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ role.id }}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ role.id }}" aria-expanded="false" aria-controls="collapse{{ role.id }}">
+                    <i class="fas fa-user-tag me-2"></i> {{ role.name }}
+                </button>
+            </h2>
+            <div id="collapse{{ role.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ role.id }}" data-bs-parent="#roleAccordion">
+                <div class="accordion-body">
+                    {% if role.description %}
+                        <p><strong>Description:</strong> {{ role.description }}</p>
+                    {% endif %}
+
+                    <p><strong>Assigned Users:</strong></p>
+                    {% if role.users.all %}
+                        <ul class="list-group list-group-flush mb-3">
+                            {% for user in role.users.all %}
+                                <li class="list-group-item">{{ user.get_full_name }} ({{ user.username }})</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted">No users assigned to this role.</p>
+                    {% endif %}
+                    <div class="mt-3 text-end">
+                        <a href="{% url 'users:edit_role' role.id %}" class="btn btn-warning btn-sm me-2" aria-label="Edit {{ role.name }}" data-bs-toggle="tooltip" title="Edit">
+                            <i class="fas fa-edit"></i> Edit
+                        </a>
+                        <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteRoleModal{{ role.id }}" aria-label="Delete {{ role.name }}" data-bs-toggle="tooltip" title="Delete">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteRoleModal{{ role.id }}" tabindex="-1" aria-labelledby="deleteRoleModalLabel{{ role.id }}" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteRoleModalLabel{{ role.id }}">Delete Role</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                Are you sure you want to delete role <strong>{{ role.name }}</strong>?
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'users:delete_role' role.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No roles found.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
+</script>
+{% endblock %}

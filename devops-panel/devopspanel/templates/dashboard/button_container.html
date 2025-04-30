@@ -1,0 +1,40 @@
+<!-- dashboard/button_container.html -->
+{% if grouped_buttons %}
+    <ul class="nav nav-tabs" id="groupsTab" role="tablist">
+        {% for group_id, group_data in grouped_buttons.items %}
+            <li class="nav-item" role="presentation">
+                <button class="nav-link {% if forloop.first %}active{% endif %}" id="group-tab-{{ group_id }}" data-bs-toggle="tab" data-bs-target="#group{{ group_id }}" type="button" role="tab" aria-controls="group{{ group_id }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                    {{ group_data.group.name }}
+                </button>
+            </li>
+        {% endfor %}
+    </ul>
+    <div class="tab-content" id="groupsTabContent">
+        {% for group_id, group_data in grouped_buttons.items %}
+            <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="group{{ group_id }}" role="tabpanel" aria-labelledby="group-tab-{{ group_id }}">
+                <!-- SubGroups as Accordions within Group Tab -->
+                <div class="accordion my-3" id="subgroupsAccordion{{ group_id }}">
+                    {% for subgroup_name, buttons in group_data.subgroups.items %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="headingSubgroup{{ group_id }}{{ forloop.counter }}">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSubgroup{{ group_id }}{{ forloop.counter }}" aria-expanded="false" aria-controls="collapseSubgroup{{ group_id }}{{ forloop.counter }}">
+                                    {{ subgroup_name }}
+                                </button>
+                            </h2>
+                            <div id="collapseSubgroup{{ group_id }}{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="headingSubgroup{{ group_id }}{{ forloop.counter }}" data-bs-parent="#subgroupsAccordion{{ group_id }}">
+                                <div class="accordion-body">
+                                    <!-- Include button_list.html for the subgroup -->
+                                    {% include 'dashboard/button_list.html' with buttons=buttons is_search=is_search %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        No Available buttons with those filters and search criteria.
+    </div>
+{% endif %}

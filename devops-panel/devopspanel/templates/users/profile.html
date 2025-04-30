@@ -1,0 +1,954 @@
+<!-- users/profile.html -->
+{% extends 'vertical_base.html' %}
+
+{% load static %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load dict_extras %}
+{% load tree_tags %}
+{% load permissions_tags %}
+{% load maintenance_filters %}
+
+{% block title %}User Profile{% endblock %}
+
+{% block page_content %}
+
+<div class="container-fluid">
+    <!-- Page-Title -->
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="page-title-box">
+{#                <div class="float-end">#}
+{#                    <ol class="breadcrumb">#}
+{#                        <li class="breadcrumb-item"><a href="#">Metrica</a></li>#}
+{#                        <li class="breadcrumb-item"><a href="#">Pages</a></li>#}
+{#                        <li class="breadcrumb-item active">Profile</li>#}
+{#                    </ol>#}
+{#                </div>#}
+                <h4 class="page-title">Profile</h4>
+            </div>
+            <!--end page-title-box-->
+        </div>
+        <!--end col-->
+    </div>
+    <!-- end page title end breadcrumb -->
+
+    <!-- Profile Section -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="met-profile">
+                        <div class="row">
+                            <div class="col-lg-4 align-self-center mb-3 mb-lg-0">
+                                <div class="met-profile-main">
+                                    <div class="met-profile-main-pic">
+                                        {% if user.avatar %}
+                                            <img id="avatarPreview" src="{{ user.avatar.url }}" alt="Current Avatar" height="110" class="rounded-circle">
+                                        {% else %}
+                                            <img id="avatarPreview" src="{% static 'images/users/user-4.jpg' %}" alt="Default Avatar" height="110" class="rounded-circle">
+                                        {% endif %}
+                                        <span class="met-profile_main-pic-change" data-bs-toggle="tooltip" data-bs-placement="top" title="Change Avatar">
+                                            <i class="fas fa-camera"></i>
+                                        </span>
+                                    </div>
+                                    <div class="met-profile_user-detail">
+                                        <h5 class="met-user-name">{{ user.get_full_name }}</h5>
+                                        <p class="mb-0 met-user-name-post">
+                                            {% if user.role %}
+                                                {{ user.role.name }}
+                                            {% else %}
+                                                User
+                                            {% endif %},
+                                            {% if user.environments.exists %}
+                                                {{ user.environments.first.name }}
+                                            {% else %}
+                                                No Environment
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div><!--end col-->
+
+                            <div class="col-lg-4 ms-auto align-self-center">
+                                <ul class="list-unstyled personal-detail mb-0">
+                                    <li>
+                                        <i class="las la-phone mr-2 text-secondary font-22 align-middle"></i>
+                                        <b>Phone</b>: {{ user.emergency_phone }}
+                                    </li>
+                                    <li class="mt-2">
+                                        <i class="las la-envelope text-secondary font-22 align-middle"></i>
+                                        <b>Email</b>: {{ user.email }}
+                                    </li>
+                                    <li class="mt-2">
+                                        <i class="las la-globe text-secondary font-22 align-middle"></i>
+                                        <b>Timezone</b>: {{ user.timezone }}
+                                    </li>
+                                </ul>
+                            </div><!--end col-->
+
+                        </div><!--end row-->
+                    </div><!--end met-profile-->
+                </div><!--end card-body-->
+
+                <div class="card-body p-0">
+                    <ul class="nav nav-tabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#ProfileSettings" role="tab" aria-selected="true">Settings</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#ServiceButtons" role="tab" aria-selected="false">Managed Services</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#Inframap" role="tab" aria-selected="false">Inframap</a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div class="tab-pane p-3 active" id="ProfileSettings" role="tabpanel">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <form method="post" enctype="multipart/form-data" id="profileForm">
+                                        {% csrf_token %}
+                                        {% if profile_form.non_field_errors %}
+                                            <div class="alert alert-danger">
+                                                {% for error in profile_form.non_field_errors %}
+                                                    <p>{{ error }}</p>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="card mb-3">
+                                            <div class="card-header">Personal Information</div>
+                                            <div class="card-body">
+                                                <div class="text-center mb-3">
+                                                    {% if user.avatar %}
+                                                        <img id="avatarPreview" src="{{ user.avatar.url }}" alt="Current Avatar" width="100" height="100" class="rounded-circle">
+                                                    {% else %}
+                                                        <img id="avatarPreview" src="{% static 'images/users/user-4.jpg' %}" alt="Default Avatar" width="100" height="100" class="rounded-circle">
+                                                    {% endif %}
+                                                </div>
+                                                {{ profile_form.first_name|as_crispy_field }}
+                                                {{ profile_form.last_name|as_crispy_field }}
+                                                {{ profile_form.email|as_crispy_field }}
+                                                {{ profile_form.emergency_phone|as_crispy_field }}
+                                                {{ profile_form.timezone|as_crispy_field }}
+                                                {{ profile_form.avatar|as_crispy_field }}
+                                                <input type="hidden" name="current_password" id="id_current_password" value="">
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-end">
+                                            <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#confirmPasswordModal">Update Profile</button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <form method="post" id="passwordChangeForm">
+                                        {% csrf_token %}
+                                        {% if password_form.non_field_errors %}
+                                            <div class="alert alert-danger">
+                                                {% for error in password_form.non_field_errors %}
+                                                    <p>{{ error }}</p>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                        <div class="card mb-3">
+                                            <div class="card-header">Change Password</div>
+                                            <div class="card-body">
+                                                {% for field in password_form %}
+                                                    {% if field.errors %}
+                                                        <div class="alert alert-danger">
+                                                            {% for error in field.errors %}
+                                                                <p>{{ error }}</p>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% endif %}
+                                                    <div class="form-group">
+                                                        {{ field|as_crispy_field }}
+                                                    </div>
+                                                {% endfor %}
+                                                <input type="hidden" name="current_password" id="id_password_current_password" value="">
+                                                <input type="hidden" name="change_password" value="1">
+
+                                                <div class="mt-3">
+                                                    <p>Password must contain:</p>
+                                                    <ul id="passwordRequirements">
+                                                        <li id="require-length" class="text-danger"><i class="fas fa-times"></i> At least 8 characters</li>
+                                                        <li id="require-digit" class="text-danger"><i class="fas fa-times"></i> At least one digit</li>
+                                                        <li id="require-uppercase" class="text-danger"><i class="fas fa-times"></i> At least one uppercase letter</li>
+                                                        <li id="require-special" class="text-danger"><i class="fas fa-times"></i> At least one special character (!@#$%^&*(),.?":{}|&lt;&gt;)</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="d-flex justify-content-end">
+                                            <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#confirmPasswordChangeModal">Change Password</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="tab-pane p-3" id="ServiceButtons" role="tabpanel">
+                            <h5>Your ServiceButtons</h5>
+
+                            <form method="get" id="serviceButtonsFilterForm" class="mb-3">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <select name="group" class="form-control select2" multiple="multiple" data-placeholder="Filter by Groups">
+                                            {% for group_id, group_data in grouped_buttons.items %}
+                                                <option value="{{ group_id }}" {% if group_id|stringformat:"s" in request.GET.group %}selected{% endif %}>{{ group_data.group.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select name="tag" class="form-control select2" multiple="multiple" data-placeholder="Filter by Tags">
+                                            {% for tag in user.tags.all %}
+                                                <option value="{{ tag.id }}" {% if tag.id|stringformat:"s" in request.GET.tag %}selected{% endif %}>{{ tag.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <input type="text" name="search" class="form-control" placeholder="Search ServiceButtons" value="{{ request.GET.search }}">
+                                    </div>
+                                </div>
+                                <div class="mt-2">
+                                    <button type="submit" class="btn btn-primary">Filter</button>
+                                    <a href="{% url 'users:profile' %}" class="btn btn-secondary">Reset</a>
+                                </div>
+                            </form>
+
+                            {% if grouped_buttons %}
+                                <ul class="nav nav-tabs" id="groupsTab" role="tablist">
+                                    {% for group_id, group_data in grouped_buttons.items %}
+                                        <li class="nav-item" role="presentation">
+                                            <button class="nav-link {% if forloop.first %}active{% endif %}" id="group-tab-{{ group_id }}" data-bs-toggle="tab" data-bs-target="#group{{ group_id }}" type="button" role="tab" aria-controls="group{{ group_id }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                                                {{ group_data.group.name }}
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+
+                                <div class="tab-content" id="groupsTabContent">
+                                    {% for group_id, group_data in grouped_buttons.items %}
+                                        <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" id="group{{ group_id }}" role="tabpanel" aria-labelledby="group-tab-{{ group_id }}">
+                                            <div class="accordion my-3" id="subgroupsAccordion{{ group_id }}">
+                                                {% for subgroup_name, buttons in group_data.subgroups.items %}
+                                                    <div class="accordion-item">
+                                                        <h2 class="accordion-header" id="headingSubgroup{{ group_id }}{{ forloop.counter }}">
+                                                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSubgroup{{ group_id }}{{ forloop.counter }}" aria-expanded="false" aria-controls="collapseSubgroup{{ group_id }}{{ forloop.counter }}">
+                                                                {{ subgroup_name }}
+                                                            </button>
+                                                        </h2>
+                                                        <div id="collapseSubgroup{{ group_id }}{{ forloop.counter }}" class="accordion-collapse collapse" aria-labelledby="headingSubgroup{{ group_id }}{{ forloop.counter }}" data-bs-parent="#subgroupsAccordion{{ group_id }}">
+                                                            <div class="accordion-body">
+                                                                {% include 'users/button_list_profile.html' with buttons=buttons %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info">
+                                    You have no ServiceButtons with those filters and search criteria.
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="tab-pane p-3" id="Inframap" role="tabpanel">
+                            <h5>Inframap</h5>
+                            <div id="inframapContainer" style="height: 600px; border: 1px solid #ddd;"></div>
+                        </div>
+                    </div>
+                </div> <!--end card-body-->
+            </div><!--end card-->
+        </div><!--end col-->
+    </div><!--end row-->
+
+    <div class="modal fade" id="universalServiceDetailsModalProfile" tabindex="-1" aria-labelledby="universalServiceDetailsModalProfileLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="universalServiceDetailsModalProfileLabel">Service Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="universalModalBodyProfile">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmPasswordModal" tabindex="-1" aria-labelledby="confirmPasswordModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="confirmPasswordForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmPasswordModalLabel">Confirm Your Password</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="currentPasswordInput" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="currentPasswordInput" required>
+                            <div class="invalid-feedback">
+                                Please enter your current password.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="confirmPasswordChangeModal" tabindex="-1" aria-labelledby="confirmPasswordChangeModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form id="confirmPasswordChangeForm">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmPasswordChangeModalLabel">Confirm Your Password</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="currentPasswordChangeInput" class="form-label">Current Password</label>
+                            <input type="password" class="form-control" id="currentPasswordChangeInput" required>
+                            <div class="invalid-feedback">
+                                Please enter your current password.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Confirm</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div><!-- container -->
+
+{{ inframap_buttons|json_script:"inframap-buttons" }}
+{{ inframap_connections|json_script:"inframap-connections" }}
+
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'libs/@midzer/tobii/tobii.min.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.19.1/cytoscape.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/js/all.min.js"></script>
+
+    <script>
+        const tobii = new Tobii();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var avatarInput = document.getElementById('id_avatar');
+            if (avatarInput) {
+                avatarInput.addEventListener('change', function(event){
+                    var reader = new FileReader();
+                    reader.onload = function(){
+                        var output = document.getElementById('avatarPreview');
+                        output.src = reader.result;
+                        console.log("Avatar preview updated.");
+                    };
+                    reader.readAsDataURL(event.target.files[0]);
+                });
+            } else {
+                console.error("Avatar input not found.");
+            }
+
+            var changeAvatarSpan = document.querySelector('.met-profile_main-pic-change');
+            if (changeAvatarSpan && avatarInput) {
+                changeAvatarSpan.addEventListener('click', function() {
+                    avatarInput.click();
+                });
+            }
+
+            var confirmPasswordForm = document.getElementById('confirmPasswordForm');
+            if (confirmPasswordForm) {
+                confirmPasswordForm.addEventListener('submit', function(event){
+                    event.preventDefault();
+                    var currentPasswordInput = document.getElementById('currentPasswordInput');
+                    if (!currentPasswordInput) {
+                        console.error("currentPasswordInput element not found.");
+                        return;
+                    }
+                    var currentPassword = currentPasswordInput.value.trim();
+                    var isValid = true;
+
+                    if (!currentPassword) {
+                        currentPasswordInput.classList.add('is-invalid');
+                        isValid = false;
+                        console.warn("Current password is empty.");
+                    } else {
+                        currentPasswordInput.classList.remove('is-invalid');
+                    }
+
+                    if (isValid) {
+                        console.log("Submitting profileForm with current_password:", currentPassword);
+                        var profileForm = document.getElementById('profileForm');
+                        if (!profileForm) {
+                            console.error("profileForm element not found.");
+                            return;
+                        }
+                        var hiddenCurrentPassword = document.getElementById('id_current_password');
+                        if (!hiddenCurrentPassword) {
+                            console.error("id_current_password element not found in profileForm.");
+                            return;
+                        }
+                        hiddenCurrentPassword.value = currentPassword;
+                        profileForm.submit();
+                    }
+                });
+            } else {
+                console.error("confirmPasswordForm not found.");
+            }
+
+            var confirmPasswordChangeForm = document.getElementById('confirmPasswordChangeForm');
+            if (confirmPasswordChangeForm) {
+                confirmPasswordChangeForm.addEventListener('submit', function(event){
+                    event.preventDefault();
+                    var currentPasswordChangeInput = document.getElementById('currentPasswordChangeInput');
+                    if (!currentPasswordChangeInput) {
+                        console.error("currentPasswordChangeInput element not found.");
+                        return;
+                    }
+                    var currentPassword = currentPasswordChangeInput.value.trim();
+                    var isValid = true;
+
+                    if (!currentPassword) {
+                        currentPasswordChangeInput.classList.add('is-invalid');
+                        isValid = false;
+                        console.warn("Current password for password change is empty.");
+                    } else {
+                        currentPasswordChangeInput.classList.remove('is-invalid');
+                    }
+
+                    if (isValid) {
+                        console.log("Submitting passwordChangeForm with current_password:", currentPassword);
+                        var passwordChangeForm = document.getElementById('passwordChangeForm');
+                        if (!passwordChangeForm) {
+                            console.error("passwordChangeForm element not found.");
+                            return;
+                        }
+                        var hiddenCurrentPasswordChange = document.getElementById('id_password_current_password');
+                        if (!hiddenCurrentPasswordChange) {
+                            console.error("id_password_current_password element not found in passwordChangeForm.");
+                            return;
+                        }
+                        hiddenCurrentPasswordChange.value = currentPassword;
+                        passwordChangeForm.submit();
+                    }
+                });
+            } else {
+                console.error("confirmPasswordChangeForm not found.");
+            }
+
+            var confirmPasswordModal = document.getElementById('confirmPasswordModal');
+            if (confirmPasswordModal) {
+                confirmPasswordModal.addEventListener('hidden.bs.modal', function () {
+                    var currentPasswordInput = document.getElementById('currentPasswordInput');
+                    if (currentPasswordInput) {
+                        currentPasswordInput.value = '';
+                        currentPasswordInput.classList.remove('is-invalid');
+                        console.log("confirmPasswordModal closed. Cleared currentPasswordInput.");
+                    }
+                });
+            } else {
+                console.error("confirmPasswordModal not found.");
+            }
+
+            var confirmPasswordChangeModal = document.getElementById('confirmPasswordChangeModal');
+            if (confirmPasswordChangeModal) {
+                confirmPasswordChangeModal.addEventListener('hidden.bs.modal', function () {
+                    var currentPasswordChangeInput = document.getElementById('currentPasswordChangeInput');
+                    if (currentPasswordChangeInput) {
+                        currentPasswordChangeInput.value = '';
+                        currentPasswordChangeInput.classList.remove('is-invalid');
+                        console.log("confirmPasswordChangeModal closed. Cleared currentPasswordChangeInput.");
+                    }
+                });
+            } else {
+                console.error("confirmPasswordChangeModal not found.");
+            }
+
+            function checkPasswordRequirements(password) {
+                var lengthRegex = /.{8,}/;
+                var digitRegex = /\d/;
+                var uppercaseRegex = /[A-Z]/;
+                var specialCharRegex = /[!@#$%^&*(),.?":{}|<>]/;
+
+                var lengthValid = lengthRegex.test(password);
+                var digitValid = digitRegex.test(password);
+                var uppercaseValid = uppercaseRegex.test(password);
+                var specialCharValid = specialCharRegex.test(password);
+
+                var lengthRequirement = document.getElementById('require-length');
+                var digitRequirement = document.getElementById('require-digit');
+                var uppercaseRequirement = document.getElementById('require-uppercase');
+                var specialCharRequirement = document.getElementById('require-special');
+
+                if (!lengthRequirement || !digitRequirement || !uppercaseRequirement || !specialCharRequirement) {
+                    console.error("One or more password requirement elements are missing.");
+                    return;
+                }
+
+                if (lengthValid) {
+                    lengthRequirement.classList.remove('text-danger');
+                    lengthRequirement.classList.add('text-success');
+                    lengthRequirement.querySelector('i').classList.remove('fa-times');
+                    lengthRequirement.querySelector('i').classList.add('fa-check');
+                } else {
+                    lengthRequirement.classList.remove('text-success');
+                    lengthRequirement.classList.add('text-danger');
+                    lengthRequirement.querySelector('i').classList.remove('fa-check');
+                    lengthRequirement.querySelector('i').classList.add('fa-times');
+                }
+
+                if (digitValid) {
+                    digitRequirement.classList.remove('text-danger');
+                    digitRequirement.classList.add('text-success');
+                    digitRequirement.querySelector('i').classList.remove('fa-times');
+                    digitRequirement.querySelector('i').classList.add('fa-check');
+                } else {
+                    digitRequirement.classList.remove('text-success');
+                    digitRequirement.classList.add('text-danger');
+                    digitRequirement.querySelector('i').classList.remove('fa-check');
+                    digitRequirement.querySelector('i').classList.add('fa-times');
+                }
+
+                if (uppercaseValid) {
+                    uppercaseRequirement.classList.remove('text-danger');
+                    uppercaseRequirement.classList.add('text-success');
+                    uppercaseRequirement.querySelector('i').classList.remove('fa-times');
+                    uppercaseRequirement.querySelector('i').classList.add('fa-check');
+                } else {
+                    uppercaseRequirement.classList.remove('text-success');
+                    uppercaseRequirement.classList.add('text-danger');
+                    uppercaseRequirement.querySelector('i').classList.remove('fa-check');
+                    uppercaseRequirement.querySelector('i').classList.add('fa-times');
+                }
+
+                if (specialCharValid) {
+                    specialCharRequirement.classList.remove('text-danger');
+                    specialCharRequirement.classList.add('text-success');
+                    specialCharRequirement.querySelector('i').classList.remove('fa-times');
+                    specialCharRequirement.querySelector('i').classList.add('fa-check');
+                } else {
+                    specialCharRequirement.classList.remove('text-success');
+                    specialCharRequirement.classList.add('text-danger');
+                    specialCharRequirement.querySelector('i').classList.remove('fa-check');
+                    specialCharRequirement.querySelector('i').classList.add('fa-times');
+                }
+            }
+
+            var newPasswordField = document.getElementById('id_new_password1');
+            if (newPasswordField) {
+                newPasswordField.addEventListener('input', function () {
+                    var password = newPasswordField.value;
+                    checkPasswordRequirements(password);
+                });
+            } else {
+                console.warn("new_password1 field not found.");
+            }
+
+            $('.select2').select2({
+                width: '100%'
+            });
+
+            var inframapButtons = JSON.parse(document.getElementById('inframap-buttons').textContent);
+            var inframapConnections = JSON.parse(document.getElementById('inframap-connections').textContent);
+
+            var inframapContainer = document.getElementById('inframapContainer');
+            if (inframapContainer) {
+                var elements = [];
+
+                var groups = {};
+                var subgroups = {};
+
+                inframapButtons.forEach(function (button) {
+                    button.groups.forEach(function (group) {
+                        if (!groups[group.id]) {
+                            groups[group.id] = {
+                                id: 'group_' + group.id,
+                                label: group.name,
+                                type: 'group'
+                            };
+                            elements.push({
+                                data: {
+                                    id: 'group_' + group.id,
+                                    label: group.name,
+                                    type: 'group'
+                                },
+                                classes: 'groupNode'
+                            });
+                        }
+
+                        if (button.subgroup) {
+                            var subgroupId = 'subgroup_profile_' + button.subgroup.id;
+                            if (!subgroups[button.subgroup.id]) {
+                                subgroups[button.subgroup.id] = {
+                                    id: subgroupId,
+                                    label: button.subgroup.name,
+                                    parent: 'group_' + group.id,
+                                    type: 'subgroup'
+                                };
+                                elements.push({
+                                    data: {
+                                        id: subgroupId,
+                                        label: button.subgroup.name,
+                                        parent: 'group_' + group.id,
+                                        type: 'subgroup'
+                                    },
+                                    classes: 'subgroupNode'
+                                });
+                            }
+
+                            elements.push({
+                                data: {
+                                    id: 'service_profile_' + button.id,
+                                    label: button.name,
+                                    parent: subgroupId,
+                                    type: 'service',
+                                    description: button.description,
+                                    url: button.url,
+                                    ip: button.ip,
+                                    port: button.port,
+                                    version: button.version,
+                                    location: button.location,
+                                    dev_language: button.dev_language,
+                                    executive: button.executive ? button.executive : '',
+                                    tags: button.tags
+                                }
+                            });
+                        } else {
+                            elements.push({
+                                data: {
+                                    id: 'service_profile_' + button.id,
+                                    label: button.name,
+                                    parent: 'group_' + group.id,
+                                    type: 'service',
+                                    description: button.description,
+                                    url: button.url,
+                                    ip: button.ip,
+                                    port: button.port,
+                                    version: button.version,
+                                    location: button.location,
+                                    dev_language: button.dev_language,
+                                    executive: button.executive ? button.executive : '',
+                                    tags: button.tags
+                                }
+                            });
+                        }
+                    });
+                });
+
+                var addedEdges = new Set();
+                inframapConnections.forEach(function (connection) {
+                    var edgeId = 'edge_profile_' + connection.source + '_' + connection.target; // Добавлено 'profile' для уникальности
+                    if (!addedEdges.has(edgeId)) {
+                        elements.push({
+                            data: {
+                                id: edgeId,
+                                source: 'service_profile_' + connection.source,
+                                target: 'service_profile_' + connection.target,
+                                label: 'connected to'
+                            }
+                        });
+                        addedEdges.add(edgeId);
+                    }
+                });
+
+                var cy = cytoscape({
+                    container: inframapContainer,
+                    elements: elements,
+                    style: [
+                        {
+                            selector: 'node',
+                            style: {
+                                'label': 'data(label)',
+                                'text-valign': 'center',
+                                'color': '#fff',
+                                'background-color': function (ele) {
+                                    var type = ele.data('type');
+                                    switch (type) {
+                                        case 'group':
+                                            return '#1f77b4';
+                                        case 'subgroup':
+                                            return '#ff7f0e';
+                                        case 'service':
+                                            return '#2ca02c';
+                                        default:
+                                            return '#666';
+                                    }
+                                },
+                                'shape': function (ele) {
+                                    var type = ele.data('type');
+                                    switch (type) {
+                                        case 'group':
+                                            return 'rectangle';
+                                        case 'subgroup':
+                                            return 'ellipse';
+                                        case 'service':
+                                            return 'roundrectangle';
+                                        default:
+                                            return 'ellipse';
+                                    }
+                                },
+                                'width': 'label',
+                                'height': 'label',
+                                'padding': '10px',
+                                'font-size': 12
+                            }
+                        },
+                        {
+                            selector: 'edge',
+                            style: {
+                                'width': 2,
+                                'line-color': '#ccc',
+                                'target-arrow-color': '#ccc',
+                                'target-arrow-shape': 'triangle',
+                                'curve-style': 'bezier',
+                                'label': 'data(label)',
+                                'font-size': 10,
+                                'text-rotation': 'autorotate',
+                                'text-margin-y': '-10px'
+                            }
+                        },
+                        {
+                            selector: '.groupNode',
+                            style: {
+                                'background-color': '#1f77b4',
+                                'shape': 'rectangle',
+                                'font-size': '14px',
+                                'font-weight': 'bold',
+                                'text-outline-width': 2,
+                                'text-outline-color': '#1f77b4'
+                            }
+                        },
+                        {
+                            selector: '.subgroupNode',
+                            style: {
+                                'background-color': '#ff7f0e',
+                                'shape': 'ellipse',
+                                'font-size': '12px',
+                                'font-weight': 'bold',
+                                'text-outline-width': 1,
+                                'text-outline-color': '#ff7f0e'
+                            }
+                        }
+                    ],
+                    layout: {
+                        name: 'cose',
+                        idealEdgeLength: 100,
+                        nodeOverlap: 20,
+                        refresh: 20,
+                        fit: true,
+                        padding: 30,
+                        randomize: false,
+                        componentSpacing: 100,
+                        nodeRepulsion: 400000,
+                        edgeElasticity: 100,
+                        nestingFactor: 5,
+                        gravity: 80,
+                        numIter: 1000,
+                        initialTemp: 200,
+                        coolingFactor: 0.95,
+                        minTemp: 1.0
+                    }
+                });
+
+                cy.on('tap', 'node', function (evt) {
+                    var node = evt.target;
+                    var data = node.data();
+                    if (data.type === 'service') {
+                        var executiveName = data.executive ? data.executive.first_name + ' ' + data.executive.last_name : 'N/A';
+                        var tags = data.tags.map(tag => tag.name).join(', ') || 'N/A';
+
+                        var detailsHtml = `
+                            <strong>Name:</strong> ${data.label}<br>
+                            <strong>Description:</strong> ${data.description}<br>
+                            <strong>URL:</strong> <a href="${data.url}" target="_blank">${data.url}</a><br>
+                            <strong>IP:</strong> ${data.ip}<br>
+                            <strong>Port:</strong> ${data.port}<br>
+                            <strong>Version:</strong> ${data.version}<br>
+                            <strong>Location:</strong> ${data.location}<br>
+                            <strong>Development Language:</strong> ${data.dev_language}<br>
+                            <strong>Executive:</strong> ${executiveName}<br>
+                            <strong>Tags:</strong> ${tags}
+                        `;
+
+                        var modalTitle = document.getElementById('universalServiceDetailsModalProfileLabel');
+                        var modalBody = document.getElementById('universalModalBodyProfile');
+
+                        modalTitle.textContent = 'Service Details: ' + data.label;
+                        modalBody.innerHTML = detailsHtml;
+
+                        var universalModal = new bootstrap.Modal(document.getElementById('universalServiceDetailsModalProfile'));
+                        universalModal.show();
+                    }
+                });
+
+                document.querySelectorAll('.open-description-modal').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var buttonName = this.getAttribute('data-button-name');
+                        var description = this.getAttribute('data-description');
+
+                        var modalTitle = document.getElementById('universalServiceDetailsModalProfileLabel');
+                        var modalBody = document.getElementById('universalModalBodyProfile');
+
+                        modalTitle.textContent = 'Description for ' + buttonName;
+                        modalBody.innerHTML = '<p>' + description.replace(/\n/g, '<br>') + '</p>';
+
+                        var universalModal = new bootstrap.Modal(document.getElementById('universalServiceDetailsModalProfile'));
+                        universalModal.show();
+                    });
+                });
+
+                // Executive
+                document.querySelectorAll('.open-executive-modal').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var executiveData = JSON.parse(this.getAttribute('data-executive'));
+
+                        var modalTitle = document.getElementById('universalServiceDetailsModalProfileLabel');
+                        var modalBody = document.getElementById('universalModalBodyProfile');
+
+                        var roles = executiveData.roles.map(role => `<span class="badge bg-info text-dark">${role.name}</span>`).join(', ') || '<span class="badge bg-secondary">No Roles</span>';
+
+                        var executiveHtml = `
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h5 class="card-title">${executiveData.first_name} ${executiveData.last_name}</h5>
+                                    <p class="card-text"><strong>Email:</strong> ${executiveData.email}</p>
+                                    <p class="card-text"><strong>Emergency Phone:</strong> ${executiveData.emergency_phone}</p>
+                                    <p class="card-text"><strong>Time Zone:</strong> ${executiveData.timezone}</p>
+                                    <p class="card-text"><strong>Roles:</strong> ${roles}</p>
+                                </div>
+                            </div>
+                        `;
+
+                        modalTitle.textContent = 'User: ' + executiveData.first_name + ' ' + executiveData.last_name;
+                        modalBody.innerHTML = executiveHtml;
+
+                        var universalModal = new bootstrap.Modal(document.getElementById('universalServiceDetailsModalProfile'));
+                        universalModal.show();
+                    });
+                });
+
+                // CodeBase
+                document.querySelectorAll('.open-codebase-modal').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var codebaseData = JSON.parse(this.getAttribute('data-codebase'));
+
+                        var modalTitle = document.getElementById('universalServiceDetailsModalProfileLabel');
+                        var modalBody = document.getElementById('universalModalBodyProfile');
+
+                        var dependenciesHtml = '';
+                        if (codebaseData.dependencies && codebaseData.dependencies.length > 0) {
+                            dependenciesHtml += '<h5>Dependencies:</h5><ul class="list-group list-group-flush">';
+                            codebaseData.dependencies.forEach(function (dep) {
+                                dependenciesHtml += `<li class="list-group-item"><a href="${dep.url}" target="_blank">${dep.name}</a>`;
+                                if (dep.dependencies && dep.dependencies.length > 0) {
+                                    dependenciesHtml += '<ul class="mt-2">';
+                                    dep.dependencies.forEach(function (sub_dep) {
+                                        dependenciesHtml += `<li><a href="${sub_dep.url}" target="_blank">${sub_dep.name}</a></li>`;
+                                    });
+                                    dependenciesHtml += '</ul>';
+                                }
+                                dependenciesHtml += '</li>';
+                            });
+                            dependenciesHtml += '</ul>';
+                        } else {
+                            dependenciesHtml = '<p>No dependencies.</p>';
+                        }
+
+                        var codebaseHtml = `
+                            <div class="mb-3">
+                                <a href="${codebaseData.url}" target="_blank" class="btn btn-primary" aria-label="Go to Repository ${codebaseData.name}" data-bs-toggle="tooltip" title="Go to Repository">
+                                    <i class="fas fa-code me-2"></i> Go to Repository
+                                </a>
+                            </div>
+                            ${dependenciesHtml}
+                        `;
+
+                        modalTitle.textContent = 'Code Base: ' + codebaseData.name;
+                        modalBody.innerHTML = codebaseHtml;
+
+                        var universalModal = new bootstrap.Modal(document.getElementById('universalServiceDetailsModalProfile'));
+                        universalModal.show();
+                    });
+                });
+
+                // Links
+                document.querySelectorAll('.open-links-modal').forEach(function (button) {
+                    button.addEventListener('click', function () {
+                        var buttonName = this.getAttribute('data-button-name');
+                        var links = JSON.parse(this.getAttribute('data-links'));
+
+                        var modalTitle = document.getElementById('universalServiceDetailsModalProfileLabel');
+                        var modalBody = document.getElementById('universalModalBodyProfile');
+
+                        var linksHtml = `<h5>Links for "${buttonName}"</h5>`;
+
+                        if (links.length > 0) {
+                            linksHtml += `
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>URL</th>
+                                                <th>Location</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                            `;
+                            links.forEach(function (link) {
+                                linksHtml += `
+                                    <tr>
+                                        <td>${link.name}</td>
+                                        <td><a href="${link.url}" target="_blank">${link.url}</a></td>
+                                        <td>
+                                            ${link.location_display && link.icon_path ? `<img src="${link.icon_path}" alt="${link.location_display}" class="location-icon small-icon me-2" data-bs-toggle="tooltip" title="${link.location_display}">` : 'N/A'}
+                                        </td>
+                                    </tr>
+                                `;
+                            });
+                            linksHtml += `
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `;
+                        } else {
+                            linksHtml += '<p>No links available.</p>';
+                        }
+
+                        modalTitle.textContent = 'Links for "' + buttonName + '"';
+                        modalBody.innerHTML = linksHtml;
+
+                        var universalModal = new bootstrap.Modal(document.getElementById('universalServiceDetailsModalProfile'));
+                        universalModal.show();
+                    });
+                });
+
+                window.copyToClipboard = function (text) {
+                    navigator.clipboard.writeText(text).then(function () {
+                        alert('IP copied to clipboard!');
+                    }, function (err) {
+                        console.error('Could not copy text: ', err);
+                    });
+                };
+            }
+        });
+    </script>
+{% endblock %}

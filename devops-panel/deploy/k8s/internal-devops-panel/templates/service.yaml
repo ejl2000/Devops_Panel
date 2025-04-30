@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.api.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Values.deployment.pythonAPI.DeploymentName }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ .Values.deployment.pythonAPI.DeploymentName }}
+  ports:
+    - port: {{ .Values.service.api.serviceApiPortBack }}
+      targetPort: {{ .Values.service.api.serviceTargetApiPortBack }}
+      protocol: {{ .Values.service.api.protocol }}
+      name: {{ .Values.service.api.name }}

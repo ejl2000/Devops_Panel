@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.deployment.pythonAPI.DeploymentName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.deployment.pythonAPI.DeploymentName }}
+spec:
+  replicas: {{ .Values.deployment.pythonAPI.Replicas }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.deployment.pythonAPI.DeploymentName }}
+      app.kubernetes.io/instance: {{ index .Values.nodeSelector .Values.APP_ENV }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.deployment.pythonAPI.DeploymentName }}
+        app.kubernetes.io/instance: {{ index .Values.nodeSelector .Values.APP_ENV }}
+    spec:
+      nodeSelector:
+        cloud.google.com/gke-nodepool: {{ index .Values.nodeSelector .Values.APP_ENV }}
+      initContainers:
+        - name: devops-panel-db-migrations
+          image: {{ .Values.deployment.pythonAPI.containers.images.ImageName }}:{{ .Values.appVersion }}
+          command: [ "sh", "-c", "python manage.py makemigrations && python manage.py migrate" ]
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.configMapName.app.name }}
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+{{/*        - name: devops-panel-run-tests*/}}
+{{/*          image: {{ .Values.deployment.pythonAPI.containers.images.ImageName }}:{{ .Values.appVersion }}*/}}
+{{/*          command: [ "sh", "-c", "python manage.py test" ]*/}}
+{{/*          envFrom:*/}}
+{{/*            - configMapRef:*/}}
+{{/*                name: {{ .Values.configMapName.app.name }}*/}}
+{{/*          resources:*/}}
+{{/*            requests:*/}}
+{{/*              memory: "128Mi"*/}}
+{{/*              cpu: "100m"*/}}
+{{/*            limits:*/}}
+{{/*              memory: "256Mi"*/}}
+{{/*              cpu: "200m"*/}}
+        - name: devops-panel-generate-static
+          image: {{ .Values.deployment.pythonAPI.containers.images.ImageName }}:{{ .Values.appVersion }}
+          command: [ "sh", "-c", "python manage.py collectstatic --force --noinput" ]
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.configMapName.app.name }}
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+        - name: devops-panel-side-scripts
+          image: {{ .Values.deployment.pythonAPI.containers.images.ImageName }}:{{ .Values.appVersion }}
+          command: [ "sh", "-c", "python manage.py create_users && python manage.py create_env_groups && python manage.py populate_permissions && python manage.py seed_tags" ]
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.configMapName.app.name }}
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "200m"
+      containers:
+        - name: {{ .Values.deployment.pythonAPI.containers.name.ContainerName }}
+          image: {{ .Values.deployment.pythonAPI.containers.images.ImageName }}:{{ .Values.appVersion}}
+          command: ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:80"]
+          ports:
+            - containerPort: {{ .Values.service.api.serviceApiPortBack }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.configMapName.app.name }}
+          resources:
+            {{- toYaml (index .Values.resourceProfiles (default "development" .Values.APP_ENV) "api") | nindent 12 }}
+{{/*          livenessProbe:*/}}
+{{/*            httpGet:*/}}
+{{/*              path: /healthz/*/}}
+{{/*              port: {{ .Values.service.api.serviceApiPortBack }}*/}}
+{{/*            initialDelaySeconds: 30*/}}
+{{/*            periodSeconds: 10*/}}
+{{/*          readinessProbe:*/}}
+{{/*            httpGet:*/}}
+{{/*              path: /ready/*/}}
+{{/*              port: {{ .Values.service.api.serviceApiPortBack }}*/}}
+{{/*            initialDelaySeconds: 5*/}}
+{{/*            periodSeconds: 10*/}}

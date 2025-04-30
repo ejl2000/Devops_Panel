@@ -1,0 +1,396 @@
+{% load static i18n %}
+{% load permissions_tags %}
+<div class="leftbar-tab-menu">
+    <div class="main-icon-menu">
+        <a href="{% url 'dashboard:index' %}" class="logo logo-metrica d-block text-center">
+            <span>
+                <img src="{% static 'images/logo-sm-white.svg' %}" alt="logo-small" class="logo-sm">
+            </span>
+        </a>
+        <div class="main-icon-menu-body">
+            <div class="position-reletive h-100" data-simplebar style="overflow-x: hidden;">
+                <ul class="nav nav-tabs" role="tablist" id="tab-menu">
+                    <!-- Home Button -->
+                    <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Home" data-bs-trigger="hover">
+                        <a href="#Home" class="nav-link">
+                            <i class="mdi mdi-home menu-icon"></i>
+                        </a><!--end nav-link-->
+                    </li><!--end nav-item-->
+                    <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Dashboards" data-bs-trigger="hover">
+                        <a href="#Dashboard" id="dashboard-tab" class="nav-link">
+                            <i class="mdi mdi-monitor-dashboard menu-icon"></i>
+                        </a><!--end nav-link-->
+                    </li><!--end nav-item-->
+                    {% if user_permissions|has_permission:"editor" or user_permissions|has_permission:"admin:*" %}
+                    <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="AppsSettings" data-bs-trigger="hover">
+                        <a href="#AppsSettings" id="apps-tab" class="nav-link">
+                            <i class="mdi mdi-settings menu-icon"></i>
+                        </a><!--end nav-link-->
+                    </li><!--end nav-item-->
+                    {% endif %}
+
+                    <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="UserSettings" data-bs-trigger="hover">
+                        <a href="#UserSettings" id="user-settings-tab" class="nav-link">
+                            <i class="ti ti-user menu-icon"></i>
+                        </a><!--end nav-link-->
+                    </li><!--end nav-item-->
+                    {% if user_permissions|has_permission:"users:administrator" %}
+                    <li class="nav-item" data-bs-toggle="tooltip" data-bs-placement="right" title="Authentication" data-bs-trigger="hover">
+                        <a href="#Authentication" id="authentication-tab" class="nav-link">
+                            <i class="mdi mdi-security menu-icon"></i>
+                        </a><!--end nav-link-->
+                    </li>
+                    {% endif %}
+                </ul><!--end nav-->
+            </div><!--end /div-->
+        </div><!--end main-icon-menu-body-->
+        <div class="pro-metrica-end">
+            <a href="" class="profile">
+                {% if user.avatar %}
+                    <img src="{{ user.avatar.url }}" alt="profile-user" class="rounded-circle me-2 thumb-sm" />
+                {% else %}
+                    <img src="{% static 'images/users/user-4.jpg' %}" alt="profile-user" class="rounded-circle me-2 thumb-sm" />
+                {% endif %}
+            </a>
+        </div><!--end pro-metrica-end-->
+    </div>
+    <!--end main-icon-menu-->
+
+    <div class="main-menu-inner">
+        <!-- LOGO -->
+        <div class="topbar-left">
+            <a href="{% url 'dashboard:index' %}" class="logo">
+                <span>
+                    <img src="{% static 'images/logo-dark.svg' %}" alt="logo-large" class="logo-lg logo-dark">
+                    <img src="{% static 'images/logo.png' %}" alt="logo-large" class="logo-lg logo-light">
+                </span>
+            </a><!--end logo-->
+        </div><!--end topbar-left-->
+        <!--end logo-->
+        <div class="menu-body navbar-vertical tab-content" data-simplebar>
+            <div id="Home" class="main-icon-menu-pane tab-pane" role="tabpanel"
+                aria-labelledby="dasboard-tab">
+                <div class="title-box">
+                    <h6 class="menu-title">Home</h6>
+                </div>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'dashboard:index' %}">Home</a>
+                    </li>
+                </ul>
+            </div>
+            <div id="Dashboard" class="main-icon-menu-pane tab-pane" role="tabpanel"
+                aria-labelledby="dasboard-tab">
+                <div class="title-box">
+                    <h6 class="menu-title">Dashboards</h6>
+                </div>
+
+                <ul class="nav flex-column">
+                    {% if user_permissions|has_permission:"core:devops_dashboard" %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'core:devops_dashboard' %}">DevOps</a>
+                    </li>
+                    {% endif %}
+{#                    <li class="nav-item">#}
+{#                        <a class="nav-link" href="{% url 'dashboard:crypto' %}">HP Monitor</a>#}
+{#                    </li><!--end nav-item-->#}
+{#                    <li class="nav-item">#}
+{#                        <a class="nav-link" href="{% url 'dashboard:crm' %}">Device Monitor</a>#}
+{#                    </li><!--end nav-item-->#}
+                </ul>
+            </div>
+
+            <div id="AppsSettings" class="main-icon-menu-pane tab-pane" role="tabpanel"
+                aria-labelledby="apps-tab">
+                <div class="title-box">
+                    <h6 class="menu-title">Apps Settings</h6>
+                </div>
+
+                <div class="collapse navbar-collapse" id="sidebarCollapse">
+                    <!-- Navigation -->
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="#sidebarDevOps" data-bs-toggle="collapse" role="button"
+                                aria-expanded="false" aria-controls="sidebarDevOps">
+                                DevOps Panel
+                            </a>
+                            {% if user_permissions|has_permission:"core:editor" or user_permissions|has_permission:"admin:*" %}
+                            <div class="collapse" id="sidebarDevOps">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#sidebarServices" data-bs-toggle="collapse" role="button"
+                                            aria-expanded="false" aria-controls="sidebarServices">
+                                            Service Buttons
+                                        </a>
+                                        <div class="collapse" id="sidebarServices">
+                                            <ul class="nav flex-column ms-3">
+                                                <li class="nav-item">
+                                                    <a href="{% url 'core:add_button' %}" class="nav-link">Add Button</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    {% if user_permissions|has_permission:"core.manage_environment" or user_permissions|has_permission:"admin:*" %}
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#sidebarEnvironments" data-bs-toggle="collapse" role="button"
+                                            aria-expanded="false" aria-controls="sidebarEnvironments">
+                                            Environments
+                                        </a>
+                                        <div class="collapse" id="sidebarEnvironments">
+                                            <ul class="nav flex-column ms-3">
+                                                <li class="nav-item">
+                                                    <a href="{% url 'core:environment_list' %}" class="nav-link">Environment List</a>
+                                                </li>
+                                            </ul>
+                                            <ul class="nav flex-column ms-3">
+                                                <li class="nav-item">
+                                                    <a href="{% url 'core:add_environment' %}" class="nav-link">Add Environment</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    {% endif %}
+                                    {% if user_permissions|has_permission:"core.manage_groups" or user_permissions|has_permission:"admin:*" %}
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#sidebarGroups" data-bs-toggle="collapse" role="button"
+                                            aria-expanded="false" aria-controls="sidebarGroups">
+                                            Groups
+                                        </a>
+                                        <div class="collapse" id="sidebarGroups">
+                                            <ul class="nav flex-column ms-3">
+                                                <li class="nav-item">
+                                                    <a href="{% url 'core:group_list' %}" class="nav-link">Group List</a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a href="{% url 'core:add_group' %}" class="nav-link">Group Add</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    {% endif %}
+                                    {% if user_permissions|has_permission:"core.manage_subgroups" or user_permissions|has_permission:"admin:*" %}
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#sidebarSubGroups" data-bs-toggle="collapse" role="button"
+                                            aria-expanded="false" aria-controls="sidebarSubGroups">
+                                            SubGroups
+                                        </a>
+                                        <div class="collapse" id="sidebarSubGroups">
+                                            <ul class="nav flex-column ms-3">
+                                                <li class="nav-item">
+                                                    <a href="{% url 'core:subgroup_list' %}" class="nav-link">SubGroup List</a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a href="{% url 'core:add_subgroup' %}" class="nav-link">SubGroup Add</a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </li>
+                                    {% endif %}
+                                    {% if user_permissions|has_permission:"core.manage_tags" or user_permissions|has_permission:"admin:*" %}
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="#sidebarTags" data-bs-toggle="collapse" role="button"
+                                            aria-expanded="false" aria-controls="sidebarTags">
+                                            Tags
+                                        </a>
+                                        <div class="collapse" id="sidebarTags">
+                                            <ul class="nav flex-column ms-3">
+                                                <li class="nav-item">
+                                                    <a href="{% url 'core:tag_list' %}" class="nav-link">Tag List</a>
+                                                </li><!--end nav-item-->
+                                            </ul>
+                                            <ul class="nav flex-column ms-3">
+                                                <li class="nav-item">
+                                                    <a href="{% url 'core:tag_create' %}" class="nav-link">Add Tag</a>
+                                                </li><!--end nav-item-->
+                                            </ul>
+                                        </div>
+                                    </li><!--end nav-item-->
+                                    {% endif %}
+                                    <li class="nav-item">
+                                </ul><!--end nav-->
+                            </div>
+                            {% endif %}
+                        </li><!--end nav-item-->
+
+{#                        <li class="nav-item">#}
+{#                            <a class="nav-link" href="#sidebarMonitoring" data-bs-toggle="collapse" role="button"#}
+{#                                aria-expanded="false" aria-controls="sidebarMonitoring">#}
+{#                                Monitoring#}
+{#                            </a>#}
+{#                            <div class="collapse " id="sidebarMonitoring">#}
+{#                                <ul class="nav flex-column">#}
+{#                                    <li class="nav-item">#}
+{#                                        <a class="nav-link" href="#sidebarDeviceMonitor" data-bs-toggle="collapse" role="button"#}
+{#                                            aria-expanded="false" aria-controls="sidebarDeviceMonitor">#}
+{#                                            Device Monitor#}
+{#                                        </a>#}
+{#                                        <div class="collapse" id="sidebarDeviceMonitor">#}
+{#                                            <ul class="nav flex-column ms-3">#}
+{#                                                <li class="nav-item">#}
+{#                                                    <a href="{% url 'core:environment_list' %}" class="nav-link">Add Receiver</a>#}
+{#                                                </li><!--end nav-item-->#}
+{#                                            </ul>#}
+{#                                        </div><!--end sidebarEnvironments-->#}
+{#                                    </li><!--end nav-item-->#}
+{#                                    <li class="nav-item">#}
+{#                                        <a class="nav-link" href="#sidebarHPMonitor" data-bs-toggle="collapse" role="button"#}
+{#                                            aria-expanded="false" aria-controls="sidebarHPMonitor">#}
+{#                                            HP Monitor#}
+{#                                        </a>#}
+{#                                        <div class="collapse" id="sidebarHPMonitor">#}
+{#                                            <ul class="nav flex-column ms-3">#}
+{#                                                <li class="nav-item">#}
+{#                                                    <a href="{% url 'core:environment_list' %}" class="nav-link">Test Menu</a>#}
+{#                                                </li><!--end nav-item-->#}
+{#                                            </ul>#}
+{#                                        </div><!--end sidebarEnvironments-->#}
+{#                                    </li><!--end nav-item-->#}
+{#                                </ul><!--end nav-->#}
+{#                            </div><!--end sidebarCrypto-->#}
+{#                        </li><!--end nav-item-->#}
+
+{#                        <li class="nav-item">#}
+{#                            <a class="nav-link" href="#sidebarCRM" data-bs-toggle="collapse" role="button"#}
+{#                                aria-expanded="false" aria-controls="sidebarCRM">#}
+{#                                CRM#}
+{#                            </a>#}
+{#                            <div class="collapse " id="sidebarCRM">#}
+{#                                <ul class="nav flex-column">#}
+{#                                    <li class="nav-item">#}
+{#                                        <a class="nav-link" href="{% url 'apps:crm-contact' %}">Contacts</a>#}
+{#                                    </li><!--end nav-item-->#}
+{#                                    <li class="nav-item">#}
+{#                                        <a class="nav-link" href="{% url 'apps:crm-opportunities' %}">Opportunities</a>#}
+{#                                    </li><!--end nav-item-->#}
+{#                                    <li class="nav-item">#}
+{#                                        <a class="nav-link" href="{% url 'apps:crm-leads' %}">Leads</a>#}
+{#                                    </li><!--end nav-item-->#}
+{#                                    <li class="nav-item">#}
+{#                                        <a class="nav-link" href="{% url 'apps:crm-customers' %}">Customers</a>#}
+{#                                    </li><!--end nav-item-->#}
+{#                                </ul><!--end nav-->#}
+{#                            </div><!--end sidebarCRM-->#}
+{#                        </li><!--end nav-item-->#}
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url  'core:calendar' %}">Maintenance Calendar</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url  'core:maintenance_list' %}">Maintenance List</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="UserSettings" class="main-icon-menu-pane  tab-pane" role="tabpanel"
+                aria-labelledby="user-settings-tab">
+                <div class="title-box">
+                    <h6 class="menu-title">User Settings</h6>
+                </div>
+                <div class="collapse navbar-collapse" id="sidebarCollapse_2">
+                    <!-- Navigation -->
+                    <ul class="navbar-nav">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'users:profile' %}">Profile</a>
+                        </li><!--end nav-item-->
+                        {% if user_permissions|has_permission:"core:api" or user_permissions|has_permission:"core:editor"%}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#sidebarElements" data-bs-toggle="collapse" role="button"
+                                aria-expanded="false" aria-controls="sidebarElements">
+                            API
+                            </a>
+                            <div class="collapse " id="sidebarElements">
+                                <ul class="nav flex-column">
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'core:api_keys_list' %}">API Keys</a>
+                                    </li><!--end nav-item-->
+                                </ul><!--end nav-->
+                            </div>
+                        </li>
+                        {% endif %}
+                </div><!--end sidebarCollapse_2-->
+            </div><!-- end Others -->
+
+
+            <div id="Authentication" class="main-icon-menu-pane  tab-pane" role="tabpanel"
+                aria-labelledby="authentication-tab">
+                <div class="title-box">
+                    <h6 class="menu-title">Security Options</h6>
+                </div>
+                <div class="collapse navbar-collapse" id="sidebarCollapse_3">
+                    <ul class="navbar-nav">
+                        {% if user_permissions|has_permission:"core:editor" %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#sidebarUsers" data-bs-toggle="collapse" role="button"
+                                aria-expanded="false" aria-controls="sidebarUsers">
+                            Users
+                            </a>
+                            <div class="collapse " id="sidebarUsers">
+                                <ul class="nav flex-column">
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'users:user_list' %}">List Users</a>
+                                    </li><!--end nav-item-->
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'users:add_user' %}  ">Add User</a>
+                                    </li><!--end nav-item-->
+                                </ul><!--end nav-->
+                            </div>
+                        </li><!--end nav-item-->
+                        {% endif %}
+                        {% if user_permissions|has_permission:"users:permission_editor" %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#sidebarRoles" data-bs-toggle="collapse" role="button"
+                                aria-expanded="false" aria-controls="sidebarRoles">
+                            Roles
+                            </a>
+                            <div class="collapse " id="sidebarRoles">
+                                <ul class="nav flex-column">
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'users:role_list' %} ">List Roles</a>
+                                    </li><!--end nav-item-->
+                                    <li class="nav-item">
+                                        <a class="nav-link" href="{% url 'users:add_role' %} ">Add Role</a>
+                                    </li><!--end nav-item-->
+                                </ul><!--end nav-->
+                            </div>
+                        </li><!--end nav-item-->
+                        {% endif %}
+                        {% if user_permissions|has_permission:"users:roles_editor" %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="#sidebarPermissions" data-bs-toggle="collapse" role="button"
+                                aria-expanded="false" aria-controls="sidebarPermissions">
+                                Permissions
+                            </a>
+                            <div class="collapse" id="sidebarPermissions">
+                                <ul class="nav flex-column ms-3">
+                                    <li class="nav-item">
+                                        <a href="{% url 'users:permission_list' %}" class="nav-link">Permissions List</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{% url 'users:add_permission' %}" class="nav-link">Add Permissions</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </li>
+                        {% endif %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="/accounts/password/reset/">Reset Password</a>
+                        </li><!--end nav-item-->
+{#                        <li class="nav-item">#}
+{#                            <a class="nav-link" href="{% url 'authentication:loginAlt' %}">2FA</a>#}
+{#                        </li><!--end nav-item-->#}
+{#                        <li class="nav-item">#}
+{#                            <a class="nav-link" href="{% url 'authentication:lockscreen' %}">Lock Screen</a>#}
+{#                        </li>#}
+                        {% if user_permissions|has_permission:"admin:*" %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'admin:index' %}">Django Admin</a>
+                        </li>
+                        {% endif %}
+                    </ul><!--end nav-->
+                </div>
+            </div><!-- end Authentication-->
+        </div>
+        <!--end menu-body-->
+    </div><!-- end main-menu-inner-->
+</div>

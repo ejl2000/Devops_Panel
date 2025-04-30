@@ -1,0 +1,91 @@
+<!-- environment_list.html -->
+{% extends 'vertical_base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load dict_extras %}
+{% load tree_tags %}
+{% load i18n %}
+
+{% block title %}Environment Management{% endblock %}
+
+{% block page_content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Environments</h2>
+        <div>
+            <a href="{% url 'core:add_environment' %}" class="btn btn-success">
+                <i class="fas fa-plus-circle me-2"></i> Create Environment
+            </a>
+        </div>
+    </div>
+
+    {% if environments %}
+    <div class="accordion" id="environmentAccordion">
+        {% for environment in environments %}
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="heading{{ environment.id }}">
+                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ environment.id }}" aria-expanded="false" aria-controls="collapse{{ environment.id }}">
+                    <i class="fas fa-globe me-2"></i> {{ environment.name }}
+                </button>
+            </h2>
+            <div id="collapse{{ environment.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ environment.id }}" data-bs-parent="#environmentAccordion">
+                <div class="accordion-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Created By:</strong> {{ environment.created_by.get_full_name }}</p>
+                            <p><strong>Created At:</strong> {{ environment.created_at|date:"Y-m-d H:i" }}</p>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <a href="{% url 'core:edit_environment' environment.id %}" class="btn btn-warning btn-sm me-2" aria-label="Edit {{ environment.name }}" data-bs-toggle="tooltip" title="Edit">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                            <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteEnvironmentModal{{ environment.id }}" aria-label="Delete {{ environment.name }}" data-bs-toggle="tooltip" title="Delete">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal fade" id="deleteEnvironmentModal{{ environment.id }}" tabindex="-1" aria-labelledby="deleteEnvironmentModalLabel{{ environment.id }}" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+              <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteEnvironmentModalLabel{{ environment.id }}">Delete Environment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+              </div>
+              <div class="modal-body">
+                Are you sure you want to delete environment <strong>{{ environment.name }}</strong>?
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" action="{% url 'core:delete_environment' environment.id %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        No environments found.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
+</script>
+{% endblock %}

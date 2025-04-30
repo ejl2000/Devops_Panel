@@ -1,0 +1,159 @@
+<!-- button_list.html -->
+{% load static %}
+{% load form_tags %}
+{% load tree_tags %}
+{% load dict_extras %}
+{% load permissions_tags %}
+{% load maintenance_filters %}
+
+{% if buttons %}
+    <!-- Cards Layout -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        {% for button in buttons %}
+            <div class="col">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">{{ button.name }}</h5>
+                        <div>
+                            {% if button.has_maintenance_soon %}
+                                <span class="badge bg-warning text-dark">Maintenance Soon</span>
+                            {% endif %}
+                            {% if button.has_in_maintenance %}
+                                <span class="badge bg-danger text-white">In Maintenance</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">
+                            <strong>Description:</strong>
+                            {% if button.description %}
+                                <button type="button" class="btn btn-sm btn-info mt-1" data-bs-toggle="modal" data-bs-target="#descriptionModal{{ button.id }}">
+                                    <i class="fas fa-info-circle me-1"></i> View Description
+                                </button>
+                            {% else %}
+                                <span class="text-muted">No description available.</span>
+                            {% endif %}
+                        </p>
+
+                        <p class="card-text">
+                            <strong>Executive:</strong>
+                            {% if button.executive %}
+                                <button type="button" class="btn btn-sm btn-secondary mt-1" data-bs-toggle="modal" data-bs-target="#executiveModal{{ button.executive.id }}">
+                                    <i class="fas fa-user me-1"></i> {{ button.executive.get_full_name }}
+                                </button>
+                            {% elif button.created_by %}
+                                <button type="button" class="btn btn-sm btn-secondary mt-1" data-bs-toggle="modal" data-bs-target="#executiveModal{{ button.created_by.id }}">
+                                    <i class="fas fa-user me-1"></i> {{ button.created_by.get_full_name }}
+                                </button>
+                            {% else %}
+                                <span class="text-muted">No Executive</span>
+                            {% endif %}
+                        </p>
+
+                        <p class="card-text">
+                            <strong>IP:</strong>
+                            {% if button.ip %}
+                                <span class="ip-text">{{ button.ip }}</span>
+                                <button class="btn btn-sm btn-outline-secondary copy-ip ms-2" data-bs-toggle="tooltip" title="Copy IP" onclick="copyToClipboard('{{ button.ip }}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </p>
+
+                        <p class="card-text">
+                            <strong>Port:</strong> {{ button.port|default:"N/A" }}
+                        </p>
+                        <p class="card-text">
+                            <strong>Version:</strong> {{ button.version|default:"N/A" }}
+                        </p>
+
+                        <p class="card-text">
+                            <strong>Location:</strong>
+                            {% with location_display=button.get_location_display %}
+                                {% with icon_path=location_icons|get_item:location_display %}
+                                    {% if icon_path %}
+                                        <img src="{% static icon_path %}" alt="{{ location_display }}" class="location-icon me-2" data-bs-toggle="tooltip" title="{{ location_display }}">
+                                    {% else %}
+                                        {{ location_display }}
+                                    {% endif %}
+                                {% endwith %}
+                            {% endwith %}
+                        </p>
+
+                        <p class="card-text">
+                            <strong>Language:</strong>
+                            {% if button.get_dev_language_display %}
+                                {% with language_display=button.get_dev_language_display %}
+                                    {% with icon_path=dev_language_icons|get_item:language_display %}
+                                        {% if icon_path %}
+                                            <img src="{% static icon_path %}" alt="{{ language_display }}" class="language-icon me-2" data-bs-toggle="tooltip" title="{{ language_display }}">
+                                        {% else %}
+                                            {{ language_display }}
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endwith %}
+                            {% else %}
+                                <span class="text-muted">N/A</span>
+                            {% endif %}
+                        </p>
+
+                        <p class="card-text">
+                            <strong>Tags:</strong>
+                            {% if button.tags.all %}
+                                {% for tag in button.tags.all %}
+                                    <span class="badge bg-info text-dark">{{ tag.name }}</span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted">No Tags</span>
+                            {% endif %}
+                        </p>
+
+                        {% if button.code_base %}
+                            <p class="card-text mt-2">
+                                <strong>Repository:</strong>
+                                {% if button.code_base.dependencies.count > 0 %}
+                                    <button type="button" class="btn btn-sm btn-primary mt-1" data-bs-toggle="modal" data-bs-target="#codeBaseModal{{ button.code_base.id }}">
+                                        <i class="fas fa-code me-1"></i> Service Repositories
+                                    </button>
+                                {% else %}
+                                    <a href="{{ button.code_base.url }}" target="_blank" class="btn btn-sm btn-success mt-1" aria-label="Go to Repository {{ button.code_base.name }}" data-bs-toggle="tooltip" title="Go to Repository">
+                                        <i class="fas fa-code me-1"></i> Go to Repository
+                                    </a>
+                                {% endif %}
+                            </p>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer d-flex justify-content-between">
+                        <div>
+                            {% if button.is_multi_link %}
+                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#linksModal{{ button.id }}" aria-label="View Links for {{ button.name }}" data-bs-toggle="tooltip" title="View Links">
+                                    <i class="fas fa-link me-1"></i> Links
+                                </button>
+                            {% else %}
+                                <a href="{{ button.url }}" target="_blank" class="btn btn-sm btn-primary" aria-label="Open {{ button.name }}" data-bs-toggle="tooltip" title="Open">
+                                    <i class="fas fa-external-link-alt me-1"></i> Open
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if user_permissions|has_permission:"core:manage_maintenance" or user_permissions|has_permission:"core:editor" %}
+                                <a href="{% url 'core:edit_button' button.id %}" class="btn btn-sm btn-warning me-2" aria-label="Edit {{ button.name }}" data-bs-toggle="tooltip" title="Edit">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </a>
+                                <a href="{% url 'core:delete_button' button.id %}" class="btn btn-sm btn-danger" aria-label="Delete {{ button.name }}" data-bs-toggle="tooltip" title="Delete">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="alert alert-info">
+        No Available buttons with those filters and search criteria.
+    </div>
+{% endif %}

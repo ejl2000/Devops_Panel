@@ -1,0 +1,1078 @@
+{% extends "vertical_base.html" %}
+{% load static %}
+{% load i18n %}
+{% load crispy_forms_tags %}
+{% load dict_extras %}
+{% load tree_tags %}
+{% load permissions_tags %}
+{% load maintenance_filters %}
+
+{% block title %}Dashboard{% endblock title %}
+
+{% block extra_css %}
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        #infrastructureModal,
+        #infrastructureModal * {
+            font-family: 'Roboto', sans-serif;
+        }
+        .my-popover {
+            position: relative;
+            background: #fff;
+            color: #000;
+            border: 1px solid #ccc;
+            border-radius: 0.4rem;
+            width: 200px;
+            padding: 0.5rem;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            font-size: 14px;
+            z-index: 9999;
+        }
+        .my-popover-header {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+        .my-popover .close-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .controls button {
+            width: 40px;
+            height: 40px;
+            margin-right: 5px;
+            border-radius: 0.5rem;
+            transition: background-color 0.3s, color 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .controls button:hover {
+            background-color: #f0f0f0;
+            color: #000;
+        }
+        .node-animation {
+            animation: fadeIn 1s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.5); }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        #cy {
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+        }
+        @media (max-width: 768px) { #cy { height: 400px; } }
+        @media (max-width: 576px) { #cy { height: 300px; } }
+        .infra-filter {
+            margin-bottom: 15px;
+        }
+        .highlighted {
+            background-color: #f05a28 !important;
+            border-color: #f05a28 !important;
+            line-color: #f05a28 !important;
+            target-arrow-color: #f05a28 !important;
+            opacity: 1;
+        }
+        .dimmed {
+            opacity: 0.1;
+        }
+        .modal-content {
+            border-radius: 0.75rem;
+        }
+        .modal-header { border-bottom: none; }
+        .modal-footer { border-top: none; }
+        .btn-infra-map {
+            border-radius: 0.5rem;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        #nameFilter { margin-top: 10px; }
+        #infrastructureModal .form-label { font-weight: 500; }
+        .btn-service-details {
+            border-radius: 0.5rem;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        #serviceDetailsModal .modal-header {
+            background-color: #343a40;
+            color: #fff;
+        }
+        #serviceDetailsModal .modal-footer {
+            border-top: none;
+        }
+        #infrastructureModal .form-select {
+            border-radius: 0.5rem;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        #nameSearchInput {
+            border-radius: 0.5rem;
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+        .group-label, .subgroup-label {
+            text-align: center;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        .service-node { /* ... */ }
+        #legend { display: none; }
+        .cytoscape-node {
+            width: 120px;
+            height: 60px;
+            text-wrap: wrap;
+            text-max-width: 100px;
+        }
+        #groupsTab.nav-tabs .nav-link {
+            border: none;
+            border-bottom: 2px solid transparent;
+            padding: 10px 15px;
+            color: #555;
+        }
+        #groupsTab.nav-tabs .nav-link:hover {
+            color: #007bff;
+        }
+        #groupsTab.nav-tabs .nav-link.active {
+            border-bottom-color: #007bff;
+            color: #007bff;
+            font-weight: bold;
+        }
+        .choices__list--dropdown {
+            z-index: 1050 !important;
+        }
+        #filterArrow {
+            transition: transform 0.3s ease;
+        }
+        #filterArrow.rotate {
+            transform: rotate(180deg);
+        }
+    </style>
+{% endblock %}
+
+{% block page_content %}
+    <div class="container mt-5">
+        <div class="d-flex justify-content-between mb-3 align-items-center">
+            <h2>Dashboard</h2>
+            <div>
+                <button type="button" class="btn btn-outline-primary btn-sm btn-infra-map"
+                        data-bs-toggle="modal" data-bs-target="#infrastructureModal">
+                    <i class="fas fa-network-wired"></i> InfraMap
+                </button>
+                <div>
+                    {% if user_permissions|has_permission:"core:add_button" %}
+                        <a href="{% url 'core:add_button' %}"
+                           class="btn btn-outline-success btn-sm ms-2"
+                           data-bs-toggle="tooltip"
+                           title="{% trans 'Add Button' %}">
+                            <i class="fas fa-plus"></i> Add Button
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters and Search Section with Collapsible Header and Toggle Arrow -->
+        <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#filterBody" style="cursor: pointer;">
+                <h5 class="mb-0">Filters & Search</h5>
+                <i class="fas fa-chevron-down" id="filterArrow"></i>
+            </div>
+            <div class="collapse show" id="filterBody">
+                <div class="card-body">
+                    <form method="get" id="filter-form">
+                        {% if current_environment %}
+                            <input type="hidden" name="environment" value="{{ current_environment.id }}">
+                        {% endif %}
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="groupFilter" class="form-label">Group Filter</label>
+                                <select id="groupFilter" name="group" multiple class="form-select"
+                                        data-choices data-choices-removeItemButton="true"
+                                        data-placeholder="Select Groups">
+                                    {% for group in groups %}
+                                        <option value="{{ group.id }}"
+                                            {% if group.id|stringformat:"s" in group_ids %}selected{% endif %}>
+                                            {{ group.name }} ({{ group.environment.name }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tagFilter" class="form-label">Tag Filter</label>
+                                <select id="tagFilter" name="tag" multiple class="form-select"
+                                        data-choices data-choices-removeItemButton="true"
+                                        data-placeholder="Select Tags">
+                                    {% for tag in tags %}
+                                        <option value="{{ tag }}"
+                                            {% if tag in tag_names %}selected{% endif %}>
+                                            {{ tag }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="subgroupFilter" class="form-label">SubGroup Filter</label>
+                                <select id="subgroupFilter" name="subgroup" multiple class="form-select"
+                                        data-choices data-choices-removeItemButton="true"
+                                        data-placeholder="Select SubGroups">
+                                    {% for subgroup in subgroups %}
+                                        <option value="{{ subgroup.id }}"
+                                            {% if subgroup.id|stringformat:"s" in request.GET.subgroup %}selected{% endif %}>
+                                            {{ subgroup.name }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="locationFilter" class="form-label">Location Filter</label>
+                                <select id="locationFilter" name="location" multiple class="form-select"
+                                        data-choices data-choices-removeItemButton="true"
+                                        data-placeholder="Select Locations">
+                                    {% for key, icon in location_icons.items %}
+                                        <option value="{{ key }}"
+                                            {% if request.GET.location and key in request.GET.location %}selected{% endif %}>
+                                            {{ key }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <!-- Search -->
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="searchInput" class="form-label">Search</label>
+                                <div class="input-group">
+                                    <input type="text" id="searchInput" name="search"
+                                           value="{{ search_query }}"
+                                           class="form-control" placeholder="Search...">
+                                    <button class="btn btn-primary" type="button"
+                                            onclick="fetchButtons()" aria-label="Search">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Filter Reset Button -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <button type="button" class="btn btn-outline-secondary" onclick="resetFilters()">
+                                    Reset Filters
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Groups as Tabs -->
+        {% if grouped_buttons %}
+            <div id="button-container">
+                <ul class="nav nav-tabs" id="groupsTab" role="tablist">
+                    {% for group_id, group_data in grouped_buttons.items %}
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link {% if forloop.first %}active{% endif %}"
+                                    id="group-tab-{{ group_id }}"
+                                    data-bs-toggle="tab"
+                                    data-bs-target="#group{{ group_id }}"
+                                    type="button"
+                                    role="tab"
+                                    aria-controls="group{{ group_id }}"
+                                    aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                                {{ group_data.group.name }}
+                            </button>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <div class="tab-content" id="groupsTabContent">
+                    {% for group_id, group_data in grouped_buttons.items %}
+                        <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+                             id="group{{ group_id }}"
+                             role="tabpanel"
+                             aria-labelledby="group-tab-{{ group_id }}">
+                            <!-- SubGroups as Accordions -->
+                            <div class="accordion my-3" id="subgroupsAccordion{{ group_id }}">
+                                {% for subgroup_name, buttons in group_data.subgroups.items %}
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="headingSubgroup{{ group_id }}{{ forloop.counter }}">
+                                            <button class="accordion-button collapsed"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#collapseSubgroup{{ group_id }}{{ forloop.counter }}"
+                                                    aria-expanded="false"
+                                                    aria-controls="collapseSubgroup{{ group_id }}{{ forloop.counter }}">
+                                                {{ subgroup_name }}
+                                            </button>
+                                        </h2>
+                                        <div id="collapseSubgroup{{ group_id }}{{ forloop.counter }}"
+                                             class="accordion-collapse collapse"
+                                             aria-labelledby="headingSubgroup{{ group_id }}{{ forloop.counter }}"
+                                             data-bs-parent="#subgroupsAccordion{{ group_id }}">
+                                            <div class="accordion-body">
+                                                {% include 'dashboard/button_list.html' with buttons=buttons is_search=is_search %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                No Available buttons with those filters and search criteria.
+            </div>
+        {% endif %}
+
+        <!-- Bootstrap Toasts for messages -->
+        <div aria-live="polite" aria-atomic="true" class="position-relative">
+          <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1200">
+            {% for message in messages %}
+              <div class="toast align-items-center text-white bg-{{ message.tags }} border-0 mb-2"
+                   role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                  <div class="toast-body">
+                    {% if message.tags == 'success' %}
+                      <i class="fas fa-check-circle me-2"></i>
+                    {% elif message.tags == 'error' %}
+                      <i class="fas fa-exclamation-circle me-2"></i>
+                    {% elif message.tags == 'warning' %}
+                      <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% elif message.tags == 'info' %}
+                      <i class="fas fa-info-circle me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                  </div>
+                  <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                          data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Modals -->
+        <!-- Executive Modals -->
+        {% for group_id, group_data in grouped_buttons.items %}
+            {% for subgroup_name, buttons in group_data.subgroups.items %}
+                {% for button in buttons %}
+                    {% if button.executive %}
+                        <div class="modal fade" id="executiveModal{{ button.executive.id }}" tabindex="-1" aria-labelledby="executiveModalLabel{{ button.executive.id }}" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                              <div class="modal-header bg-secondary text-white">
+                                <h5 class="modal-title" id="executiveModalLabel{{ button.executive.id }}">User: {{ button.executive.get_full_name }}</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ button.executive.get_full_name }}</h5>
+                                        <p class="card-text"><strong>Email:</strong> {{ button.executive.email }}</p>
+                                        <p class="card-text"><strong>Emergency Phone:</strong> {{ button.executive.emergency_phone }}</p>
+                                        <p class="card-text"><strong>Time Zone:</strong> {{ button.executive.timezone }}</p>
+                                        <p class="card-text"><strong>Roles:</strong>
+                                            {% for role in button.executive.roles.all %}
+                                                <span class="badge bg-info text-dark">{{ role.name }}</span>
+                                            {% empty %}
+                                                <span class="badge bg-secondary">No Roles</span>
+                                            {% endfor %}
+                                        </p>
+                                    </div>
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    {% elif button.created_by %}
+                        <div class="modal fade" id="executiveModal{{ button.created_by.id }}" tabindex="-1" aria-labelledby="executiveModalLabel{{ button.created_by.id }}" aria-hidden="true">
+                          <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                              <div class="modal-header bg-secondary text-white">
+                                <h5 class="modal-title" id="executiveModalLabel{{ button.created_by.id }}">User: {{ button.created_by.get_full_name }}</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                              </div>
+                              <div class="modal-body">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ button.created_by.get_full_name }}</h5>
+                                        <p class="card-text"><strong>Email:</strong> {{ button.created_by.email }}</p>
+                                        <p class="card-text"><strong>Emergency Phone:</strong> {{ button.created_by.emergency_phone }}</p>
+                                        <p class="card-text"><strong>Time Zone:</strong> {{ button.created_by.timezone }}</p>
+                                        <p class="card-text"><strong>Roles:</strong>
+                                            {% for role in button.created_by.roles.all %}
+                                                <span class="badge bg-info text-dark">{{ role.name }}</span>
+                                            {% empty %}
+                                                <span class="badge bg-secondary">No Roles</span>
+                                            {% endfor %}
+                                        </p>
+                                    </div>
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                    {% endif %}
+                    <!-- Description Modal -->
+                    {% if button.description %}
+                        <div class="modal fade" id="descriptionModal{{ button.id }}" tabindex="-1" aria-labelledby="descriptionModalLabel{{ button.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-info text-white">
+                                        <h5 class="modal-title" id="descriptionModalLabel{{ button.id }}">Description for {{ button.name }}</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p>{{ button.description|linebreaks }}</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        {% endfor %}
+
+        <!-- Code Base Modals -->
+        {% for group_id, group_data in grouped_buttons.items %}
+            {% for subgroup_name, buttons in group_data.subgroups.items %}
+                {% for button in buttons %}
+                    {% if button.code_base %}
+                        <div class="modal fade" id="codeBaseModal{{ button.code_base.id }}" tabindex="-1" aria-labelledby="codeBaseModalLabel{{ button.code_base.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-secondary text-white">
+                                        <h5 class="modal-title" id="codeBaseModalLabel{{ button.code_base.id }}">Code Base: {{ button.code_base.name }}</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <a href="{{ button.code_base.url }}" target="_blank" class="btn btn-primary" aria-label="Go to Repository {{ button.code_base.name }}" data-bs-toggle="tooltip" title="Go to Repository">
+                                                <i class="fas fa-code me-2"></i> Go to Repository
+                                            </a>
+                                        </div>
+                                        {% if button.code_base.dependencies.exists %}
+                                            <h5>Dependencies:</h5>
+                                            <ul class="list-group list-group-flush">
+                                                {% for dependency in button.code_base.dependencies.all %}
+                                                    <li class="list-group-item">
+                                                        <a href="{{ dependency.url }}" target="_blank">{{ dependency.name }}</a>
+                                                        {% if dependency.dependencies.exists %}
+                                                            <ul class="mt-2">
+                                                                {% for sub_dependency in dependency.dependencies.all %}
+                                                                    <li><a href="{{ sub_dependency.url }}" target="_blank">{{ sub_dependency.name }}</a></li>
+                                                                {% endfor %}
+                                                            </ul>
+                                                        {% endif %}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        {% else %}
+                                            <p>No dependencies.</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        {% endfor %}
+
+        <!-- Links Modals -->
+        {% for group_id, group_data in grouped_buttons.items %}
+            {% for subgroup_name, buttons in group_data.subgroups.items %}
+                {% for button in buttons %}
+                    {% if button.is_multi_link %}
+                        <div class="modal fade" id="linksModal{{ button.id }}" tabindex="-1" aria-labelledby="linksModalLabel{{ button.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5 class="modal-title" id="linksModalLabel{{ button.id }}">Links for "{{ button.name }}"</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        {% if button.links.all %}
+                                            <div class="table-responsive">
+                                                <table class="table table-striped table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Name</th>
+                                                            <th>URL</th>
+                                                            <th>Location</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {% for link in button.links.all %}
+                                                        <tr>
+                                                            <td>{{ link.name }}</td>
+                                                            <td><a href="{{ link.url }}" target="_blank">{{ link.url }}</a></td>
+                                                            <td>
+                                                                {% with location_display=link.get_location_display %}
+                                                                    {% with icon_path=location_icons|get_item:location_display %}
+                                                                        {% if icon_path %}
+                                                                            <img src="{% static icon_path %}" alt="{{ location_display }}" class="location-icon small-icon me-2" data-bs-toggle="tooltip" title="{{ location_display }}">
+                                                                        {% else %}
+                                                                            {{ location_display }}
+                                                                        {% endif %}
+                                                                    {% endwith %}
+                                                                {% endwith %}
+                                                            </td>
+                                                        </tr>
+                                                        {% endfor %}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        {% else %}
+                                            <p>No links available.</p>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        {% endfor %}
+
+        <!-- Infrastructure Modal -->
+        <div class="modal fade"
+             id="infrastructureModal"
+             tabindex="-1"
+             aria-labelledby="infrastructureModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-md-down">
+                <div class="modal-content">
+                    <div class="modal-header bg-dark text-white">
+                        <h5 class="modal-title" id="infrastructureModalLabel">Infrastructure Map</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body position-relative">
+                        <!-- Loader -->
+                        <div id="loader" class="position-absolute top-50 start-50 translate-middle">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+
+                        <div class="infra-filter">
+                            <label for="modalSubgroupFilter" class="form-label">Filter by SubGroup</label>
+                            <select id="modalSubgroupFilter" multiple class="form-select mb-3">
+                                <option value="" disabled>Select SubGroups</option>
+                                {% for subgroup in subgroups %}
+                                    <option value="{{ subgroup.id }}">{{ subgroup.name }}</option>
+                                {% endfor %}
+                            </select>
+
+                            <label for="nameSearchInput" class="form-label">Filter by Name</label>
+                            <input type="text" id="nameSearchInput" class="form-control mb-3"
+                                   placeholder="Enter service name">
+
+                            <button id="applyFilter" class="btn btn-primary mb-3">Apply Filter</button>
+                            <button id="resetFilterBtn" class="btn btn-secondary mb-3">Reset Filter</button>
+                        </div>
+
+                        <div class="controls mb-3">
+                            <button id="zoom-in" class="btn btn-sm btn-outline-secondary" aria-label="Zoom In">
+                                <i class="bi bi-zoom-in" style="color: #007bff;"></i>
+                            </button>
+                            <button id="zoom-out" class="btn btn-sm btn-outline-secondary" aria-label="Zoom Out">
+                                <i class="bi bi-zoom-out" style="color: #007bff;"></i>
+                            </button>
+                            <button id="reset-zoom" class="btn btn-sm btn-outline-secondary" aria-label="Reset Zoom">
+                                <i class="bi bi-arrows-angle-expand" style="color: #007bff;"></i>
+                            </button>
+                        </div>
+
+                        <div id="cy" class="node-animation"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ServiceButton Details Modal -->
+        <div class="modal fade"
+             id="serviceDetailsModal"
+             tabindex="-1"
+             aria-labelledby="serviceDetailsModalLabel"
+             aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="serviceDetailsModalLabel">Service Details</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                                aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    var groupIds = {{ group_ids_json|safe }};
+    var tagNames = {{ tag_names_json|safe }};
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const filterForm = document.getElementById('filter-form');
+        const groupFilterElement = document.getElementById('groupFilter');
+        const tagFilterElement = document.getElementById('tagFilter');
+        const searchInput = document.getElementById('searchInput');
+        const subgroupFilterElement = document.getElementById('subgroupFilter');
+        const locationFilterElement = document.getElementById('locationFilter');
+        const nameSearchInput = document.getElementById('nameSearchInput');
+        const applyFilterBtn = document.getElementById('applyFilter');
+        const resetFilterBtn = document.getElementById('resetFilterBtn');
+
+        let groupChoicesInstance, tagChoicesInstance, subgroupChoicesInstance, locationChoicesInstance, modalSubgroupChoicesInstance;
+        if (groupFilterElement) {
+            groupChoicesInstance = new Choices(groupFilterElement, {
+                removeItemButton: true,
+                searchEnabled: true,
+                placeholderValue: 'Select Groups',
+                shouldSort: false,
+            });
+        }
+        if (tagFilterElement) {
+            tagChoicesInstance = new Choices(tagFilterElement, {
+                removeItemButton: true,
+                searchEnabled: true,
+                placeholderValue: 'Select Tags',
+                shouldSort: false,
+                duplicateItemsAllowed: false,
+                addItems: true,
+            });
+        }
+        if (subgroupFilterElement) {
+            subgroupChoicesInstance = new Choices(subgroupFilterElement, {
+                removeItemButton: true,
+                searchEnabled: true,
+                placeholderValue: 'Select SubGroups',
+                shouldSort: false,
+                noResultsText: 'No subgroups found',
+                itemSelectText: '',
+            });
+        }
+        if (locationFilterElement) {
+            locationChoicesInstance = new Choices(locationFilterElement, {
+                removeItemButton: true,
+                searchEnabled: true,
+                placeholderValue: 'Select Locations',
+                shouldSort: false,
+            });
+            Array.from(locationFilterElement.options).forEach(option => option.selected = false);
+            locationChoicesInstance.setValue([]);
+        }
+        const modalSubgroupFilterElement = document.getElementById('modalSubgroupFilter');
+        if (modalSubgroupFilterElement) {
+            modalSubgroupChoicesInstance = new Choices(modalSubgroupFilterElement, {
+                removeItemButton: true,
+                searchEnabled: true,
+                placeholderValue: 'Select SubGroups',
+                shouldSort: false,
+                noResultsText: 'No subgroups found',
+                itemSelectText: '',
+            });
+        }
+
+        function initializeTooltipsAndToasts(container) {
+            const tooltipTriggerList = [].slice.call(container.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function(tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+            const toastElList = [].slice.call(container.querySelectorAll('.toast'));
+            toastElList.map(function(toastEl) {
+                return new bootstrap.Toast(toastEl, { delay: 7000 });
+            });
+        }
+        initializeTooltipsAndToasts(document);
+
+        window.copyToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                var copyToast = new bootstrap.Toast(document.getElementById('copyToast'));
+                copyToast.show();
+            }, function(err) {
+                console.error('Can`t copy text: ', err);
+            });
+        };
+
+        let cy;
+
+        function setupOldHighlightLogic() {
+            cy.on('tap', 'node', function(evt) {
+                const node = evt.target;
+                cy.elements().removeClass('highlighted dimmed');
+                if (node.hasClass('groupNode') || node.hasClass('subgroupNode')) {
+                    const descendants = node.descendants();
+                    const connectedEdges = descendants.connectedEdges();
+                    const connectedNodes = connectedEdges.connectedNodes();
+                    const nodesToHighlight = descendants.union(connectedNodes).union(node);
+                    nodesToHighlight.addClass('highlighted');
+                    connectedEdges.addClass('highlighted');
+                    cy.elements().difference(nodesToHighlight).difference(connectedEdges)
+                        .addClass('dimmed');
+                } else {
+                    const connectedElements = node.closedNeighborhood();
+                    connectedElements.addClass('highlighted');
+                    cy.elements('node').not(connectedElements)
+                        .not('.groupNode, .subgroupNode')
+                        .addClass('dimmed');
+                    cy.elements('edge').not(connectedElements).addClass('dimmed');
+                }
+            });
+            cy.on('tap', function(evt) {
+                if (evt.target === cy) {
+                    cy.elements().removeClass('highlighted dimmed');
+                }
+            });
+        }
+
+        function filterDiagram() {
+            let currentSubgroupFilterElement;
+            const infraModal = document.getElementById('infrastructureModal');
+            if (infraModal && infraModal.classList.contains('show')) {
+                currentSubgroupFilterElement = document.getElementById('modalSubgroupFilter');
+            } else {
+                currentSubgroupFilterElement = subgroupFilterElement;
+            }
+            const selectedSubgroups = currentSubgroupFilterElement
+                ? Array.from(currentSubgroupFilterElement.selectedOptions).map(o => o.value)
+                : [];
+            const nameFilter = nameSearchInput ? nameSearchInput.value.trim().toLowerCase() : "";
+            let matchedServiceNodes = cy.nodes().filter(n => {
+                if (!n.id().startsWith("service_")) return false;
+                const nameOk = !nameFilter || (n.data("label") || "").toLowerCase().includes(nameFilter);
+                let subgroupOk = true;
+                if (selectedSubgroups.length) {
+                    if (n.data("parent")) {
+                        const subgroupId = n.data("parent").split("_")[1];
+                        subgroupOk = selectedSubgroups.includes(subgroupId);
+                    } else {
+                        subgroupOk = false;
+                    }
+                }
+                return (nameFilter && selectedSubgroups.length) ? (nameOk && subgroupOk) :
+                       nameFilter ? nameOk : selectedSubgroups.length ? subgroupOk : false;
+            });
+            let adjacentEdges = matchedServiceNodes.connectedEdges();
+            let adjacentNodes = adjacentEdges.connectedNodes();
+            let extendedSet = matchedServiceNodes.union(adjacentEdges).union(adjacentNodes);
+            extendedSet = extendedSet.union(matchedServiceNodes.ancestors());
+            extendedSet = extendedSet.union(extendedSet.ancestors());
+            cy.elements().forEach(el => {
+                if (extendedSet.contains(el)) {
+                    el.show();
+                } else {
+                    el.hide();
+                }
+            });
+        }
+
+        function showNodePopup(node, evt) {
+            const data = node.data();
+            const content = `
+                <div class="my-popover">
+                    <div class="my-popover-header">${data.label}</div>
+                    <div>IP: ${data.ip || 'N/A'}</div>
+                    <div>Port: ${data.port || 'N/A'}</div>
+                    <div>Location: ${data.location || 'N/A'}</div>
+                    <div>Language: ${data.dev_language || 'N/A'}</div>
+                    <div>Executer: ${data.executive || 'N/A'}</div>
+                </div>
+            `;
+            let popover = document.createElement('div');
+            popover.innerHTML = content;
+            popover.style.position = 'absolute';
+            const offsetX = 10, offsetY = 10;
+            popover.style.left = (evt.originalEvent.clientX + offsetX) + 'px';
+            popover.style.top = (evt.originalEvent.clientY + offsetY) + 'px';
+            popover.id = 'cy-popover';
+            document.body.appendChild(popover);
+        }
+        function hideNodePopup() {
+            let popover = document.getElementById('cy-popover');
+            if (popover) { popover.remove(); }
+        }
+        function setupPopupHandler() {
+            cy.on('mouseover', 'node', function(evt) {
+                const node = evt.target;
+                if (node.id().startsWith("service_")) { showNodePopup(node, evt); }
+            });
+            cy.on('mouseout', 'node', function(evt) { hideNodePopup(); });
+        }
+
+        function loadDiagram() {
+            const loader = document.getElementById('loader');
+            if (loader) loader.style.display = 'block';
+            const selectedGroups = groupFilterElement ? Array.from(groupFilterElement.selectedOptions).map(o => o.value) : [];
+            const selectedTags = tagFilterElement ? Array.from(tagFilterElement.selectedOptions).map(o => o.value) : '';
+            let url = "{% url 'core:infrastructure_data' %}?environment={{ current_environment.id }}";
+            selectedGroups.forEach(gr => { url += `&group=${gr}`; });
+            selectedTags.forEach(tg => { url += `&tag=${tg}`; });
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => { throw new Error('HTTP ' + response.status + ': ' + text); });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (loader) loader.style.display = 'none';
+                    if (cy && typeof cy.destroy === 'function') { cy.destroy(); }
+                    cy = cytoscape({
+                        container: document.getElementById('cy'),
+                        elements: data.elements,
+                        style: [
+                            {
+                                selector: 'node[label]',
+                                style: {
+                                    'background-color': 'data(color)',
+                                    'border-color': '#333',
+                                    'border-width': 1,
+                                    'label': 'data(label)',
+                                    'text-valign': 'center',
+                                    'text-halign': 'center',
+                                    'color': '#000',
+                                    'font-size': '10px',
+                                    'font-family': 'Arial, sans-serif',
+                                    'text-wrap': 'wrap',
+                                    'text-max-width': '80px',
+                                    'shape': 'round-rectangle',
+                                    'width': '80px',
+                                    'height': '40px'
+                                }
+                            },
+                            {
+                                selector: 'edge',
+                                style: {
+                                    'width': 2,
+                                    'line-color': '#bbb',
+                                    'target-arrow-color': '#bbb',
+                                    'target-arrow-shape': 'triangle',
+                                    'curve-style': 'bezier'
+                                }
+                            },
+                            {
+                                selector: '.highlighted',
+                                style: {
+                                    'border-color': '#f00',
+                                    'border-width': 2,
+                                    'opacity': 1
+                                }
+                            },
+                            {
+                                selector: '.dimmed',
+                                style: {
+                                    'opacity': 0.1
+                                }
+                            },
+                            {
+                                selector: '.groupNode',
+                                style: {
+                                    'shape': 'roundrectangle',
+                                    'background-color': 'data(color)',
+                                    'background-opacity': 0.2,
+                                    'border-width': 2,
+                                    'border-color': '#ccc',
+                                    'label': 'data(label)',
+                                    'text-valign': 'top',
+                                    'text-halign': 'center',
+                                    'padding': '20px',
+                                    'color': '#000',
+                                    'font-size': '16px',
+                                    'font-weight': 'bold',
+                                    'font-family': 'Arial, sans-serif',
+                                    'opacity': 1
+                                }
+                            },
+                            {
+                                selector: '.subgroupNode',
+                                style: {
+                                    'shape': 'roundrectangle',
+                                    'background-color': 'data(color)',
+                                    'background-opacity': 0.2,
+                                    'border-width': 1,
+                                    'border-color': '#bbb',
+                                    'label': 'data(label)',
+                                    'text-valign': 'top',
+                                    'text-halign': 'center',
+                                    'padding': '10px',
+                                    'color': '#000',
+                                    'font-size': '12px',
+                                    'font-weight': 'bold',
+                                    'font-family': 'Arial, sans-serif',
+                                    'opacity': 1
+                                }
+                            }
+                        ],
+                        layout: {
+                            name: 'cose-bilkent',
+                            animate: true,
+                            animationDuration: 1000,
+                            fit: true,
+                            padding: 30,
+                            idealEdgeLength: 50,
+                            nodeRepulsion: 3000,
+                            edgeElasticity: 0.3,
+                            gravity: 0.5,
+                            numIter: 1000,
+                            initialTemp: 200,
+                            coolingFactor: 0.95,
+                            minTemp: 1.0
+                        }
+                    });
+                    cy.ready(function() {
+                        cy.elements().removeClass('highlighted dimmed visible');
+                        cy.elements().show();
+                        setupOldHighlightLogic();
+                        setupPopupHandler();
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching infrastructure data:', error);
+                    if (loader) loader.style.display = 'none';
+                    alert('An error occurred in map loading.');
+                });
+        }
+
+        let infrastructureModal = document.getElementById('infrastructureModal');
+        if (infrastructureModal) {
+            infrastructureModal.addEventListener('show.bs.modal', function() {
+                if (subgroupChoicesInstance) {
+                    subgroupChoicesInstance.removeActiveItems();
+                    subgroupChoicesInstance.setChoiceByValue([]);
+                }
+                if (modalSubgroupChoicesInstance) {
+                    modalSubgroupChoicesInstance.removeActiveItems();
+                    modalSubgroupChoicesInstance.setChoiceByValue([]);
+                }
+                if (nameSearchInput) { nameSearchInput.value = ''; }
+                loadDiagram();
+            });
+        }
+
+        if (applyFilterBtn) {
+            applyFilterBtn.addEventListener('click', () => {
+                if (cy) {
+                    cy.elements().removeClass('visible');
+                    filterDiagram();
+                }
+            });
+        }
+
+        if (resetFilterBtn) {
+            resetFilterBtn.addEventListener('click', () => {
+                if (subgroupChoicesInstance) {
+                    subgroupChoicesInstance.removeActiveItems();
+                    subgroupChoicesInstance.setChoiceByValue([]);
+                }
+                if (nameSearchInput) { nameSearchInput.value = ''; }
+                if (cy) {
+                    cy.elements().removeClass('visible');
+                    cy.elements().show();
+                }
+            });
+        }
+
+        window.resetFilters = function() {
+            if (groupChoicesInstance) groupChoicesInstance.setValue([]);
+            if (tagChoicesInstance) tagChoicesInstance.setValue([]);
+            if (subgroupChoicesInstance) subgroupChoicesInstance.setValue([]);
+            if (locationChoicesInstance) locationChoicesInstance.setValue([]);
+            if (searchInput) searchInput.value = '';
+        };
+
+        window.fetchButtons = function() {
+            const formData = new FormData(filterForm);
+            const searchValue = formData.get('search') ? formData.get('search').trim() : '';
+            if (!searchValue) { formData.delete('search'); }
+            if (formData.getAll('location').length === 0) { formData.delete('location'); }
+            if (formData.getAll('subgroup').length === 0) { formData.delete('subgroup'); }
+            const queryString = new URLSearchParams(formData).toString();
+            fetch(`{% url 'core:devops_dashboard' %}?${queryString}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            })
+            .then(response => {
+                if (!response.ok) { throw new Error(`Network error: ${response.statusText}`); }
+                return response.json();
+            })
+            .then(data => {
+                let container = document.getElementById('button-container');
+                container.innerHTML = data.html;
+                initializeTooltipsAndToasts(container);
+                if (data.is_search) {
+                    let allCollapse = container.querySelectorAll('.accordion-collapse');
+                    allCollapse.forEach(el => { new bootstrap.Collapse(el, { toggle: false }).show(); });
+                    let allAccordionButtons = container.querySelectorAll('.accordion-button');
+                    allAccordionButtons.forEach(btn => {
+                        btn.classList.remove('collapsed');
+                        btn.setAttribute('aria-expanded', 'true');
+                    });
+                    let tabPane = container.closest('.tab-pane');
+                    if (tabPane) {
+                        let activeTabTrigger = document.querySelector(`#groupsTab [data-bs-target="#${tabPane.id}"]`);
+                        if (activeTabTrigger) { new bootstrap.Tab(activeTabTrigger).show(); }
+                    }
+                    loadDiagram();
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching buttons:', error);
+                alert('An error occured when button load.');
+            });
+        };
+
+        document.getElementById('zoom-in').addEventListener('click', function() {
+            const currentZoom = cy.zoom();
+            cy.zoom(currentZoom * 1.2);
+        });
+        document.getElementById('zoom-out').addEventListener('click', function() {
+            const currentZoom = cy.zoom();
+            cy.zoom(currentZoom / 1.2);
+        });
+        document.getElementById('reset-zoom').addEventListener('click', function() {
+            cy.fit(undefined, 30);
+        });
+        var filterBody = document.getElementById('filterBody');
+        var filterArrow = document.getElementById('filterArrow');
+        filterBody.addEventListener('hide.bs.collapse', function() {
+            filterArrow.classList.remove('rotate');
+        });
+        filterBody.addEventListener('show.bs.collapse', function() {
+            filterArrow.classList.add('rotate');
+        });
+    });
+</script>
+{% endblock %}

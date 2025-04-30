@@ -1,0 +1,18 @@
+<!-- core/templates/core/tag_confirm_delete.html -->
+
+{% extends 'vertical_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Delete Tag{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid mb-5">
+    <h2 class="mb-4">Delete Tag</h2>
+    <p>Are you sure you want to delete the tag "{{ tag.name }}"?</p>
+    <form method="post">
+        {% csrf_token %}
+        <a href="{% url 'core:tag_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+</div>
+{% endblock %}

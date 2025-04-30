@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.configMapName.app.name }}
+  namespace: {{ .Values.namespace }}
+data:
+  SECRET_KEY: {{ .Values.configs.SECRET_KEY | quote }}
+  DJANGO_DEBUG: {{ .Values.configs.DJANGO_DEBUG | quote }}
+  DJANGO_ALLOWED_HOSTS: {{ .Values.configs.ALLOWED_HOSTS | quote }}
+  DB_ENGINE: {{ .Values.configs.DB_ENGINE | quote }}
+  DB_NAME: {{ .Values.configs.DB_NAME | quote }}
+  DB_USER: {{ .Values.configs.DB_USER | quote }}
+  DB_PASSWORD: {{ .Values.configs.DB_PASSWORD | quote }}
+  DB_HOST: {{ .Values.configs.DB_HOST | quote }}
+  DB_PORT: {{ .Values.configs.DB_PORT | quote }}
+  SECURE_SSL_REDIRECT: {{ .Values.configs.SECURE_SSL_REDIRECT | quote }}
+  SESSION_COOKIE_SECURE: {{ .Values.configs.SESSION_COOKIE_SECURE | quote }}
+  CSRF_COOKIE_SECURE: {{ .Values.configs.CSRF_COOKIE_SECURE | quote }}
+  SECURE_HSTS_SECONDS: {{ .Values.configs.SECURE_HSTS_SECONDS | quote }}
+  SECURE_HSTS_INCLUDE_SUBDOMAINS: {{ .Values.configs.SECURE_HSTS_INCLUDE_SUBDOMAINS | quote }}
+  SECURE_HSTS_PRELOAD: {{ .Values.configs.SECURE_HSTS_PRELOAD | quote }}
+  SECURE_BROWSER_XSS_FILTER: {{ .Values.configs.SECURE_BROWSER_XSS_FILTER | quote }}
+  SECURE_CONTENT_TYPE_NOSNIFF: {{ .Values.configs.SECURE_CONTENT_TYPE_NOSNIFF | quote }}
+  APP_LOG_LEVEL: {{ .Values.configs.APP_LOG_LEVEL | quote }}
+  CSRF_TRUSTED_ORIGINS: {{ .Values.configs.CSRF_TRUSTED_ORIGINS | quote }}
+  STATIC_URL: {{ .Values.configs.STATIC_URL | quote }}
+  APP_TAG: {{ .Values.configs.APP_TAG | quote }}
+  DJANGO_SETTINGS_MODULE: {{ .Values.configs.DJANGO_SETTINGS_MODULE | quote }}
+  AXES_ENABLED: {{ .Values.configs.AXES_ENABLED | quote }}
+  DJANGO_ADMINS: {{ .Values.configs.DJANGO_ADMINS | quote }}

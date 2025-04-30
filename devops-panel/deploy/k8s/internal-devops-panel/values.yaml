@@ -1,0 +1,88 @@
+# Namespace and common settings
+namespace: monitoring-apps
+appVersion: '$BUILD_TAG'
+
+# Application names
+appNameBack: gfm-devops-panel-v3-service
+
+# Service ports
+service:
+  type: ClusterIP
+  serviceApiIp: 10.128.0.163
+  api:
+    metadata:
+      name: gfm-devops-panel-v3-service
+    name: gfm-devops-panel-v3-service
+    serviceApiPortBack: 80
+    serviceTargetApiPortBack: 80
+    protocol: TCP
+
+# Backend service settings
+backendServiceName: gfm-devops-panel-v3-service
+backendServicePort: 80
+
+#Deployments Vars
+deployment:
+  pythonAPI:
+    DeploymentName: gfm-devops-panel-v3-service
+    Replicas: 1
+    service: DEVOPS-API-Service
+    containers:
+      name:
+        ContainerName: gfm-devops-panel
+      images:
+        ImageName: gcr.io/cloud-196419/gfm-devops-panel-service-back
+    volumeMounts:
+      name: api-log-storage
+      mountPath: /logs
+  containerConfigs:
+
+nodeSelector:
+  development: gfm-development-side-pool
+  staging: gfm-staging-side-pool
+  production: gfm-side-pool
+
+resourceProfiles:
+  development:
+    api:
+      requests:
+        memory: '128Mi'
+        cpu: '300m'
+      limits:
+        memory: '128Mi'
+        cpu: '300m'
+  staging:
+    api:
+      requests:
+        memory: '128Mi'
+        cpu: '300m'
+      limits:
+        memory: '256Mi'
+        cpu: '300m'
+  production:
+    api:
+      requests:
+        memory: '256Mi'
+        cpu: '500m'
+      limits:
+        memory: '512Mi'
+        cpu: '500m'
+
+
+# ConfigMap name
+configMapName:
+  app:
+    name: gfm-devops-panel-v3-configs
+
+ingress:
+  name: gfm-devops-panel-v3-ingress
+  service:
+    port: 80
+  hosts:
+    - host: new-devops.positrace.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+secret:
+  name: gfm-devops-panel-v3-ssl-secret

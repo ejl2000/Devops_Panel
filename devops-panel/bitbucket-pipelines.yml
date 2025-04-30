@@ -1,0 +1,219 @@
+image: atlassian/default-image:latest
+definitions:
+  services:
+    docker:
+      memory: 8192
+      cpus: "8.0"
+
+pipelines:
+  branches:
+    develop:
+        - step:
+            runs-on:
+              - 'self.hosted'
+              - 'linux'
+              - 'devops'
+            size: 8x
+            name: Build Devops Panel DEV Image
+            image: docker:latest
+            services:
+              - docker
+            script:
+              - echo "$GCLOUD_API_KEYFILE" | base64 -d > gcr_key.json
+              # Authenticate with GCR
+              - cat gcr_key.json | docker login -u _json_key --password-stdin https://gcr.io
+              - rm gcr_key.json
+              - export DOCKER_BUILDKIT=0
+              - docker build -f $DEVOPS_PANEL_DOCKERFILE_PATH . -t gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME:develop-$BITBUCKET_BUILD_NUMBER
+              - docker tag gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME:develop-$BITBUCKET_BUILD_NUMBER gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME:develop-latest
+              - docker push gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME:develop-$BITBUCKET_BUILD_NUMBER
+              - docker push gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME:develop-latest
+    staging:
+      - parallel:
+        - step:
+            runs-on:
+              - 'self.hosted'
+              - 'linux'
+              - 'devops'
+            size: 8x
+            name: Build Devops Panel STAGING Image
+            image: docker:latest
+            services:
+              - docker
+            script:
+              - echo "$GCLOUD_API_KEYFILE" | base64 -d > gcr_key.json
+              # Authenticate with GCR
+              - cat gcr_key.json | docker login -u _json_key --password-stdin https://gcr.io
+              - rm gcr_key.json
+              - export DOCKER_BUILDKIT=0
+              - docker build -f $DEVOPS_PANEL_DOCKERFILE_PATH . -t gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME:staging-$BITBUCKET_BUILD_NUMBER
+              - docker tag gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME:staging-$BITBUCKET_BUILD_NUMBER gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME:staging-latest
+              - docker push gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME:staging-$BITBUCKET_BUILD_NUMBER
+              - docker push gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME:staging-latest
+#      - stage:
+#          name: Deploy to STAGING Step
+#          deployment: Staging
+#          steps:
+#            - step:
+#                runs-on:
+#                  - 'self.hosted'
+#                  - 'linux'
+#                  - 'devops'
+#                size: 8x
+#                name: Deploy to STAGING K8S using Helm Chart
+#                image:
+#                  name: google/cloud-sdk
+#                  username: $DOCKER_LOGIN
+#                  password: $DOCKER_PASSWORD
+#                  email: $DOCKER_HUB_EMAIL
+#                script:
+#                  - export BUILD_TAG=staging-$BITBUCKET_BUILD_NUMBER
+#                  # Authenticate to GCP
+#                  - echo $GCLOUD_API_KEYFILE | base64 -d > gcloud-api-key.json
+#                  - gcloud auth activate-service-account --key-file gcloud-api-key.json
+#                  - gcloud config set project $GCLOUD_PROJECT_ID
+#
+#                  # Connect to GKE Cluster
+#                  - gcloud container clusters get-credentials $CLUSTER_NAME --zone $GCLOUD_ZONE
+#
+#                  # Install kubectl
+#                  - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+#                  - chmod +x kubectl
+#                  - mv kubectl /usr/local/bin/
+#
+#                  # Install Helm
+#                  - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+#                  - chmod 700 get_helm.sh
+#                  - ./get_helm.sh
+#
+#                  # Update Chart Versions
+#                  - 'sed -i "s|version:.*|version: \"${BITBUCKET_BUILD_NUMBER}\"|" ./deploy/k8s/chart-spark/Chart.yaml'
+#                  - 'sed -i "s|appVersion:.*|appVersion: \"${BITBUCKET_BUILD_NUMBER}\"|" ./deploy/k8s/chart-spark/Chart.yaml'
+#                  - chmod +x ./deploy/generate-custom-values.sh
+#                  - ./deploy/generate-custom-values.sh
+#                  - cat deploy/k8s/internal-devops-panel/values.yaml
+#                  - helm lint deploy/k8s/internal-devops-panel -f custom-values.yaml -f custom-values.yaml --set APP_ENV=staging
+#                  - helm template deploy/k8s/internal-devops-panel -f custom-values.yaml -f custom-values.yaml --set APP_ENV=staging
+#                  - helm upgrade --install --namespace=monitoring-apps $DEVOPS_PANEL_CHART_NAME ./deploy/k8s/internal-devops-panel -f custom-values.yaml --set APP_ENV=staging
+
+  tags:
+    '*':
+      - parallel:
+          - step:
+              runs-on:
+                - 'self.hosted'
+                - 'linux'
+                - 'devops'
+              size: 4x
+              name: Tag and Push RC DevOps Panel Image
+              image: docker:19.03.12
+              services:
+                - docker
+              script:
+                - echo "$GCLOUD_API_KEYFILE" | base64 -d > gcr_key.json
+                # Authenticate with GCR
+                - cat gcr_key.json | docker login -u _json_key --password-stdin https://gcr.io
+                - rm gcr_key.json
+                - export BUILD_TAG=$BITBUCKET_TAG
+                - docker pull gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:staging-latest
+                - docker tag gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:staging-latest gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:$BUILD_TAG
+                - docker tag gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:staging-latest gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:rc-$BUILD_TAG
+                - docker push gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:$BUILD_TAG
+                - docker push gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:rc-$BUILD_TAG
+
+  custom:
+    deploy-devops-panel-to-k8s-prod:
+      - variables:
+          - name: BITBUCKET_TAG
+      - step:
+          runs-on:
+            - 'self.hosted'
+            - 'linux'
+            - 'devops'
+          size: 8x
+          name: Tag and Push Prod Devops Panel Image
+          image: docker:19.03.12
+          services:
+            - docker
+          script:
+            - echo "$GCLOUD_API_KEYFILE" | base64 -d > gcr_key.json
+            # Authenticate with GCR
+            - cat gcr_key.json | docker login -u _json_key --password-stdin https://gcr.io
+            - rm gcr_key.json
+            - export BUILD_TAG=$BITBUCKET_TAG
+            - docker pull gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:$BUILD_TAG
+            - docker tag gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:$BUILD_TAG gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:latest
+            - docker tag gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:$BUILD_TAG gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:$BUILD_TAG-stable
+            - docker push gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:latest
+            - docker push gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME}:$BUILD_TAG-stable
+      - stage:
+          name: Deploy Prod Step
+          deployment: ProductionV2
+          steps:
+            - step:
+                runs-on:
+                  - 'self.hosted'
+                  - 'linux'
+                  - 'devops'
+                size: 8x
+                name: Deploy to PROD K8S using Helm Chart
+                image:
+                  name: google/cloud-sdk:alpine
+                  username: $DOCKER_LOGIN
+                  password: $DOCKER_PASSWORD
+                  email: $DOCKER_HUB_EMAIL
+                script:
+                  - export BUILD_TAG=$BITBUCKET_TAG"-stable"
+                  # Authenticate to GCP
+                  - echo $GCLOUD_API_KEYFILE | base64 -d > gcloud-api-key.json
+                  - gcloud auth activate-service-account --key-file gcloud-api-key.json
+                  - gcloud config set project $GCLOUD_PROJECT_ID
+
+                  # Connect to GKE Cluster
+                  - gcloud container clusters get-credentials $CLUSTER_NAME --zone $GCLOUD_ZONE
+
+                  # Install kubectl
+                  - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                  - chmod +x kubectl
+                  - mv kubectl /usr/local/bin/
+
+                  # Install Helm
+                  - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+                  - chmod 700 get_helm.sh
+                  - apk update
+                  - apk add openssl openssl-dev
+                  - ./get_helm.sh
+
+                  # Installing gcloud
+                  - gcloud components install gke-gcloud-auth-plugin
+
+                  # Update Chart Versions
+                  - 'sed -i "s|version:.*|version: \"${BITBUCKET_TAG}\"|" ./deploy/k8s/internal-devops-panel/Chart.yaml'
+                  - 'sed -i "s|appVersion:.*|appVersion: $BUILD_TAG|" ./deploy/k8s/internal-devops-panel/Chart.yaml'
+                  - chmod +x ./deploy/generate-custom-values.sh
+                  - ./deploy/generate-custom-values.sh
+                  - cat deploy/k8s/internal-devops-panel/values.yaml
+                  - helm upgrade --install --namespace=monitoring-apps $DEVOPS_PANEL_CHART_NAME_V2 ./deploy/k8s/internal-devops-panel -f custom-values.yaml --set APP_ENV=production
+
+    build_base_image:
+      - step:
+          name: Build and Tag&Push Base Image
+          image: docker:latest
+          runs-on:
+            - 'self.hosted'
+            - 'linux'
+            - 'devops'
+          size: 8x
+          services:
+            - docker
+          script:
+            - echo "$GCLOUD_API_KEYFILE" | base64 -d > gcr_key.json
+            # Authenticate with GCR
+            - cat gcr_key.json | docker login -u _json_key --password-stdin https://gcr.io
+            - rm gcr_key.json
+            - export DOCKER_BUILDKIT=0
+            - export BUILD_TAG=$BITBUCKET_BUILD_NUMBER
+            - docker build -f $DEVOPS_PANEL_BASE_DOCKERFILE_PATH . -t gcr.io/$GCLOUD_PROJECT_ID/$DEVOPS_PANEL_IMAGE_NAME_BASE:$BUILD_TAG
+            - docker tag gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME_BASE}:$BUILD_TAG gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME_BASE}:latest
+            - docker push gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME_BASE}:latest
+            - docker push gcr.io/$GCLOUD_PROJECT_ID/${DEVOPS_PANEL_IMAGE_NAME_BASE}:$BUILD_TAG

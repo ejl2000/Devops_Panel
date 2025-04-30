@@ -1,0 +1,616 @@
+{% extends 'vertical_base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add Service Button{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid mb-5">
+    <h2 class="mb-4">Add Service Button</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">
+                {% for error in form.non_field_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <nav>
+            <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                <a class="nav-link active" id="step1-tab" data-bs-toggle="tab" href="#step1" role="tab" aria-controls="step1" aria-selected="true">Basic Information</a>
+                <a class="nav-link" id="step2-tab" data-bs-toggle="tab" href="#step2" role="tab" aria-controls="step2" aria-selected="false">Grouping & Environment</a>
+                <a class="nav-link" id="step3-tab" data-bs-toggle="tab" href="#step3" role="tab" aria-controls="step3" aria-selected="false">Connections & Details</a>
+                <a class="nav-link" id="step4-tab" data-bs-toggle="tab" href="#step4" role="tab" aria-controls="step4" aria-selected="false">Code Base</a>
+                <a class="nav-link" id="step5-tab" data-bs-toggle="tab" href="#step5" role="tab" aria-controls="step5" aria-selected="false">Confirmation</a>
+            </div>
+        </nav>
+
+        <div class="tab-content" id="nav-tabContent">
+            <!-- Step 1: Basic Information -->
+            <div class="tab-pane fade show active" id="step1" role="tabpanel" aria-labelledby="step1-tab">
+                <div class="card mb-4">
+                    <div class="card-header">Basic Information</div>
+                    <div class="card-body">
+                        {% if form.name %}
+                            {{ form.name|as_crispy_field }}
+                        {% endif %}
+                        {% if form.description %}
+                            {{ form.description|as_crispy_field }}
+                        {% endif %}
+
+                        {% if form.is_multi_link %}
+                            <div class="form-check mb-3">
+                                {{ form.is_multi_link|as_crispy_field }}
+                            </div>
+                        {% endif %}
+
+                        {% if form.url %}
+                            <div id="url-section" class="mb-3">
+                                {{ form.url|as_crispy_field }}
+                            </div>
+                        {% endif %}
+
+                        {% if formset.forms %}
+                            <div id="links-section" class="mb-3" style="display: none;">
+                                <h5>URLs</h5>
+                                {{ formset.management_form }}
+                                <div id="links-forms">
+                                    {% for form in formset.forms %}
+                                        <div class="card mb-3 link-form">
+                                            <div class="card-body">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-4">
+                                                        {% if form.name %}
+                                                            {{ form.name|as_crispy_field }}
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        {% if form.url %}
+                                                            {{ form.url|as_crispy_field }}
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        {% if form.location %}
+                                                            {{ form.location|as_crispy_field }}
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="col-md-1 text-end">
+                                                        {% if form.instance.pk %}
+                                                            <button type="button" class="btn btn-danger btn-sm remove-link" title="Delete">
+                                                                <i class="fas fa-times"></i>
+                                                            </button>
+                                                        {% endif %}
+                                                    </div>
+                                                </div>
+                                                {% if form.instance.pk %}
+                                                    {{ form.DELETE }}
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                                <button type="button" class="btn btn-secondary" id="add-link">Add Another Link</button>
+                            </div>
+                        {% endif %}
+
+                        {% if form.icon_choice %}
+                            {{ form.icon_choice|as_crispy_field }}
+                        {% endif %}
+                        {% if form.custom_icon %}
+                            {{ form.custom_icon|as_crispy_field }}
+                        {% endif %}
+                        {% if form.tags %}
+                            {{ form.tags|as_crispy_field }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 2: Grouping & Environment -->
+            <div class="tab-pane fade" id="step2" role="tabpanel" aria-labelledby="step2-tab">
+                <div class="card mb-4">
+                    <div class="card-header">Grouping & Environment</div>
+                    <div class="card-body">
+                        {% if form.groups %}
+                            {{ form.groups|as_crispy_field }}
+                        {% endif %}
+                        {% if form.subgroup %}
+                            <div id="subgroup-field" style="display: none;">
+                                {{ form.subgroup|as_crispy_field }}
+                            </div>
+                        {% endif %}
+                        {% if form.environment %}
+                            {{ form.environment|as_crispy_field }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Connections & Details -->
+            <div class="tab-pane fade" id="step3" role="tabpanel" aria-labelledby="step3-tab">
+                <div class="card mb-4">
+                    <div class="card-header">Connections & Details</div>
+                    <div class="card-body">
+                        {% if form.connections %}
+                            {{ form.connections|as_crispy_field }}
+                        {% endif %}
+                        {% if form.executive %}
+                            {{ form.executive|as_crispy_field }}
+                        {% endif %}
+                        {% if form.dev_language %}
+                            {{ form.dev_language|as_crispy_field }}
+                        {% endif %}
+                        {% if form.ip %}
+                            {{ form.ip|as_crispy_field }}
+                        {% endif %}
+                        {% if form.port %}
+                            {{ form.port|as_crispy_field }}
+                        {% endif %}
+                        {% if form.version %}
+                            {{ form.version|as_crispy_field }}
+                        {% endif %}
+                        {% if form.location %}
+                            {{ form.location|as_crispy_field }}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 4: Code Base -->
+            <div class="tab-pane fade" id="step4" role="tabpanel" aria-labelledby="step4-tab">
+                <div class="card mb-4">
+                    <div class="card-header">Code Base</div>
+                    <div class="card-body">
+                        {% if form.has_code_base %}
+                            <div class="form-check mb-3">
+                                {{ form.has_code_base|as_crispy_field }}
+                            </div>
+                        {% endif %}
+
+                        {% if form.has_code_base or form.code_base_name or form.code_base_url or form.has_code_base_dependencies %}
+                            <div id="codebase-section" style="display: none;">
+                                {% if form.code_base_name %}
+                                    {{ form.code_base_name|as_crispy_field }}
+                                {% endif %}
+                                {% if form.code_base_url %}
+                                    {{ form.code_base_url|as_crispy_field }}
+                                {% endif %}
+
+                                {% if form.has_code_base_dependencies %}
+                                    <div class="form-check mb-3">
+                                        {{ form.has_code_base_dependencies|as_crispy_field }}
+                                    </div>
+                                {% endif %}
+
+                                {% if form.has_code_base_dependencies %}
+                                    <div id="dependencies-section" style="display: none;">
+                                        <h5>Code Base Dependencies</h5>
+                                        {{ codebase_dependency_formset.management_form }}
+                                        <div id="dependencies-forms">
+                                            {% for form in codebase_dependency_formset.forms %}
+                                                <div class="card mb-3 dependency-form">
+                                                    <div class="card-body">
+                                                        <div class="row align-items-center">
+                                                            <div class="col-md-3">
+                                                                {% if form.name %}
+                                                                    {{ form.name|as_crispy_field }}
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="col-md-3">
+                                                                {% if form.url %}
+                                                                    {{ form.url|as_crispy_field }}
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                {% if form.dependencies %}
+                                                                    {{ form.dependencies|as_crispy_field }}
+                                                                {% endif %}
+                                                            </div>
+                                                            <div class="col-md-2 text-end">
+                                                                {% if form.instance.pk %}
+                                                                    <button type="button" class="btn btn-danger btn-sm remove-dependency" title="Delete">
+                                                                        <i class="fas fa-times"></i>
+                                                                    </button>
+                                                                {% endif %}
+                                                                {% if form.DELETE %}
+                                                                    {{ form.DELETE }}
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                        <button type="button" class="btn btn-secondary" id="add-dependency">Add Dependency</button>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 5: Confirmation -->
+            <div class="tab-pane fade" id="step5" role="tabpanel" aria-labelledby="step5-tab">
+                <div class="card mb-4">
+                    <div class="card-header">Confirmation</div>
+                    <div class="card-body">
+                        <div class="form-check my-2">
+                            <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" required>
+                            <label class="form-check-label" for="flexCheckDefault">
+                                I agree with the Terms and Conditions.
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wizard navigation buttons -->
+        <div class="d-flex justify-content-between">
+            <button type="button" class="btn btn-secondary" id="prev-step" disabled>Previous</button>
+            <button type="button" class="btn btn-primary" id="next-step">Next</button>
+            <button type="submit" class="btn btn-success d-none" id="finish-step">Finish</button>
+        </div>
+    </form>
+</div>
+
+<!-- Empty forms for link clonning -->
+<div id="empty-link-form" style="display: none;">
+    <div class="card mb-3 link-form">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-4">
+                    {{ formset.empty_form.name }}
+                </div>
+                <div class="col-md-4">
+                    {{ formset.empty_form.url }}
+                </div>
+                <div class="col-md-3">
+                    {{ formset.empty_form.location }}
+                </div>
+                <div class="col-md-1 text-end">
+                    <button type="button" class="btn btn-danger btn-sm remove-link" title="Delete">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    {{ formset.empty_form.DELETE }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Empty forms for deps clonning -->
+<div id="empty-dependency-form" style="display: none;">
+    <div class="card mb-3 dependency-form">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    {{ codebase_dependency_formset.empty_form.name }}
+                </div>
+                <div class="col-md-3">
+                    {{ codebase_dependency_formset.empty_form.url }}
+                </div>
+                <div class="col-md-4">
+                    {{ codebase_dependency_formset.empty_form.dependencies }}
+                </div>
+                <div class="col-md-2 text-end">
+                    <button type="button" class="btn btn-danger btn-sm remove-dependency" title="Delete">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    {{ codebase_dependency_formset.empty_form.DELETE }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<style>
+    input[type=checkbox][name$='-DELETE'] {
+        display: none;
+    }
+</style>
+
+<script>
+    var ICON_CHOICES = {{ ICON_CHOICES|safe }};
+    var subgroupsData = {{ subgroups_data|safe }};
+    var currentSubgroupId = {{ current_subgroup_id|default:'null' }};
+</script>
+<script>
+    $(document).ready(function() {
+        function initializeSelect2(element) {
+            element.find('.select2').select2({
+                theme: 'bootstrap5',
+                width: '100%',
+                placeholder: 'Choose',
+                allowClear: true,
+                templateResult: function (data) {
+                    if (!data.id) {
+                        return data.text;
+                    }
+                    var $result = $('<span></span>');
+                    $result.text(data.text);
+                    if (data.text.length > 50) {
+                        $result.text(data.text.substring(0, 47) + '...');
+                        $result.attr('title', data.text);
+                    }
+                    return $result;
+                },
+                templateSelection: function (data) {
+                    return data.text;
+                }
+            });
+
+            element.find('.select2-tags').select2({
+                tags: true,
+                tokenSeparators: [',', ' '],
+                theme: 'bootstrap5',
+                width: '100%',
+                placeholder: 'Enter tags',
+                allowClear: true,
+                createTag: function (params) {
+                    var term = $.trim(params.term);
+                    if (term === '') {
+                        return null;
+                    }
+                    return {
+                        id: term,
+                        text: term,
+                        newTag: true
+                    };
+                },
+                templateResult: function (data) {
+                    if (!data.id) {
+                        return data.text;
+                    }
+                    var $result = $('<span></span>');
+                    $result.text(data.text);
+                    if (data.text.length > 50) {
+                        $result.text(data.text.substring(0, 47) + '...');
+                        $result.attr('title', data.text);
+                    }
+                    return $result;
+                },
+                templateSelection: function (data) {
+                    return data.text;
+                }
+            });
+        }
+
+        function initializeFormWidgets(element) {
+            initializeSelect2(element);
+        }
+
+        initializeFormWidgets($(document));
+
+        function toggleLinkSections() {
+            if ($('#id_is_multi_link').is(':checked')) {
+                $('#url-section').hide();
+                $('#links-section').show();
+                $('#id_url').prop('required', false);
+            } else {
+                $('#url-section').show();
+                $('#links-section').hide();
+                $('#id_url').prop('required', true);
+                $('#links-forms').find('.link-form').not(':first').remove();
+                $('#id_links-TOTAL_FORMS').val(1);
+            }
+        }
+
+        toggleLinkSections();
+
+        $('#id_is_multi_link').change(function () {
+            toggleLinkSections();
+        });
+
+        $('#add-link').click(function () {
+            var form_idx = $('#id_links-TOTAL_FORMS').val();
+            if (form_idx < 10) {
+                var new_form_html = $('#empty-link-form').html().replace(/__prefix__/g, form_idx);
+                var new_form = $(new_form_html);
+                $('#links-forms').append(new_form);
+                $('#id_links-TOTAL_FORMS').val(parseInt(form_idx) + 1);
+                initializeFormWidgets(new_form);
+            } else {
+                alert('You can create no more than 10 links.');
+            }
+        });
+
+        $(document).on('click', '.remove-link', function () {
+            var linkForm = $(this).closest('.link-form');
+            var deleteInput = linkForm.find('input[type=checkbox][name$="-DELETE"]');
+            if (deleteInput.length) {
+                deleteInput.prop('checked', true);
+                linkForm.slideUp();
+            } else {
+                linkForm.slideUp(function () {
+                    $(this).remove();
+                    var totalForms = $('#id_links-TOTAL_FORMS').val();
+                    $('#id_links-TOTAL_FORMS').val(parseInt(totalForms) - 1);
+                });
+            }
+        });
+
+        function toggleCodeBaseSections() {
+            if ($('#id_has_code_base').is(':checked')) {
+                $('#codebase-section').show();
+                if ($('#id_has_code_base_dependencies').is(':checked')) {
+                    $('#dependencies-section').show();
+                } else {
+                    $('#dependencies-section').hide();
+                }
+            } else {
+                $('#codebase-section').hide();
+                $('#dependencies-section').hide();
+            }
+        }
+
+        toggleCodeBaseSections();
+
+        $('#id_has_code_base').change(function () {
+            toggleCodeBaseSections();
+        });
+
+        $('#id_has_code_base_dependencies').change(function () {
+            toggleCodeBaseSections();
+        });
+
+        $('#add-dependency').click(function () {
+            var form_idx = $('#id_dependencies-TOTAL_FORMS').val();
+            if (form_idx < 10) {
+                var new_form_html = $('#empty-dependency-form').html().replace(/__prefix__/g, form_idx);
+                var new_form = $(new_form_html);
+                $('#dependencies-forms').append(new_form);
+                $('#id_dependencies-TOTAL_FORMS').val(parseInt(form_idx) + 1);
+                initializeFormWidgets(new_form);
+            } else {
+                alert('You can create no more than 10 dependencies.');
+            }
+        });
+
+        $(document).on('click', '.remove-dependency', function () {
+            var dependencyForm = $(this).closest('.dependency-form');
+            var deleteInput = dependencyForm.find('input[type=checkbox][name$="-DELETE"]');
+            if (deleteInput.length) {
+                deleteInput.prop('checked', true);
+                dependencyForm.slideUp();
+            } else {
+                dependencyForm.slideUp(function () {
+                    $(this).remove();
+                    var totalForms = $('#id_dependencies-TOTAL_FORMS').val();
+                    $('#id_dependencies-TOTAL_FORMS').val(parseInt(totalForms) - 1);
+                });
+            }
+        });
+
+        function updateSubgroupField() {
+            var selectedGroups = $('#id_groups').val();
+            var subgroupField = $('#subgroup-field');
+            var subgroupSelect = $('#id_subgroup');
+
+            if (selectedGroups && selectedGroups.length > 0) {
+                subgroupField.show();
+                subgroupSelect.empty();
+                subgroupSelect.append($('<option>').val('').text('---------'));
+
+                selectedGroups.forEach(function (groupId) {
+                    if (subgroupsData[groupId]) {
+                        subgroupsData[groupId].forEach(function (subgroup) {
+                            var option = $('<option>').val(subgroup.id).text(subgroup.name);
+                            subgroupSelect.append(option);
+                        });
+                    }
+                });
+
+                if (currentSubgroupId) {
+                    subgroupSelect.val(currentSubgroupId).trigger('change');
+                } else {
+                    subgroupSelect.trigger('change');
+                }
+            } else {
+                subgroupField.hide();
+                subgroupSelect.empty();
+                subgroupSelect.trigger('change');
+            }
+        }
+
+        $('#subgroup-field').hide();
+
+        $('#id_groups').on('change', function () {
+            console.log(subgroupsData);
+            updateSubgroupField();
+        });
+
+        updateSubgroupField();
+
+        var currentStep = 1;
+        var totalSteps = 5;
+
+        $('#next-step').click(function () {
+            var currentTab = $('#step' + currentStep);
+            var valid = true;
+
+            currentTab.find('input, select, textarea').each(function () {
+                if ($(this).prop('required') && !$(this).val()) {
+                    valid = false;
+                    $(this).addClass('is-invalid');
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+
+            if (!valid) {
+                alert('Please fill out all required fields.');
+                return;
+            }
+
+            if (currentStep < totalSteps) {
+                currentStep++;
+                updateWizard();
+            }
+        });
+
+        $('#prev-step').click(function () {
+            if (currentStep > 1) {
+                currentStep--;
+                updateWizard();
+            }
+        });
+
+        function updateWizard() {
+            $('.nav-link').removeClass('active');
+            $('#step' + currentStep + '-tab').addClass('active');
+
+            $('.tab-pane').removeClass('show active');
+            $('#step' + currentStep).addClass('show active');
+
+            if (currentStep === 1) {
+                $('#prev-step').attr('disabled', true);
+            } else {
+                $('#prev-step').attr('disabled', false);
+            }
+
+            if (currentStep === totalSteps) {
+                $('#next-step').addClass('d-none');
+                $('#finish-step').removeClass('d-none');
+            } else {
+                $('#next-step').removeClass('d-none');
+                $('#finish-step').addClass('d-none');
+            }
+
+            updateAriaSelected();
+        }
+
+        function updateAriaSelected() {
+            $('#nav-tab .nav-link').each(function() {
+                var href = $(this).attr('href');
+                if ($(href).hasClass('show') && $(href).hasClass('active')) {
+                    $(this).attr('aria-selected', 'true');
+                } else {
+                    $(this).attr('aria-selected', 'false');
+                }
+            });
+        }
+
+        $('#finish-step').addClass('d-none');
+
+        {% if form.errors %}
+            var firstErrorTab = $('.tab-pane').has('.is-invalid').first().attr('id');
+            var firstErrorTabLink = $('.nav-link[href="#' + firstErrorTab + '"]');
+            if (firstErrorTabLink.length) {
+                $('.nav-link').removeClass('active');
+                firstErrorTabLink.addClass('active');
+
+                $('.tab-pane').removeClass('show active');
+                $('#' + firstErrorTab).addClass('show active');
+
+                updateAriaSelected();
+            }
+        {% endif %}
+    });
+</script>
+{% endblock %}

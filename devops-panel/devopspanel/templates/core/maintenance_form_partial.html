@@ -1,0 +1,37 @@
+<!-- core/templates/core/maintenance_form_partial.html -->
+
+<form id="editMaintenanceForm" method="post" action="{% url 'core:maintenance_edit' maintenance.id %}">
+    {% csrf_token %}
+    <div class="mb-3">
+        {{ form.title.label_tag }}
+        {{ form.title }}
+    </div>
+    <div class="mb-3">
+        {{ form.description.label_tag }}
+        {{ form.description }}
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            {{ form.start_time.label_tag }}
+            {{ form.start_time }}
+        </div>
+        <div class="col-md-6 mb-3">
+            {{ form.end_time.label_tag }}
+            {{ form.end_time }}
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            {{ form.status.label_tag }}
+            {{ form.status }}
+        </div>
+        <div class="col-md-6 mb-3">
+            {{ form.executive.label_tag }}
+            {{ form.executive }}
+        </div>
+    </div>
+    <div class="mb-3">
+        {{ form.service_buttons.label_tag }}
+        {{ form.service_buttons }}
+    </div>
+</form>

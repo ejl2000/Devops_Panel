@@ -1,0 +1,330 @@
+<!-- templates/dashboard/main.html -->
+{% extends 'vertical_base.html' %}
+{% load static %}
+{% load crispy_forms_tags %}
+{% load dict_extras %}
+{% load tree_tags %}
+{% load i18n %}
+
+{% block title %}
+    Welcome, {{ user.get_full_name|default:user.username }}
+{% endblock title %}
+
+{% block page_content %}
+<div class="container-fluid mt-4">
+    <!-- User Greeting -->
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="text-center">Welcome, {{ user.get_full_name|default:user.username }}!</h2>
+            <p class="text-center">This is your personalized Dashboard.</p>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row">
+        <!-- ServiceButtons per Group (Donut) -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">Services per Group</h5>
+                </div>
+                <div class="card-body">
+                    <div id="serviceButtonsChart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Chart (Informational) -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">Total Users</h5>
+                </div>
+                <div class="card-body">
+                    <div id="usersChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- ServiceButtons with CodeBase (Donut) -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="card-title mb-0">ServiceButtons with CodeBase</h5>
+                </div>
+                <div class="card-body">
+                    <div id="codeBasesChart"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ServiceButtons per Location (Pie) -->
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">ServiceButtons per Location</h5>
+                </div>
+                <div class="card-body">
+                    <div id="locationChart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_javascript %}
+<!-- Include ApexCharts -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const serviceButtonsChartContainer = document.getElementById('serviceButtonsChart');
+    const usersChartContainer = document.getElementById('usersChart');
+    const codeBasesChartContainer = document.getElementById('codeBasesChart');
+    const locationChartContainer = document.getElementById('locationChart');
+
+    let serviceButtonsChart;
+    let usersChart;
+    let codeBasesChart;
+    let locationChart;
+
+    function initializeCharts(data) {
+        //-------------------------------------------------------
+        // Chart 1: Services per Group (Donut)
+        //-------------------------------------------------------
+        const groups = data.servicebuttons_per_group.map(item => item.name);
+        const buttonCounts = data.servicebuttons_per_group.map(item => item.button_count);
+        const totalServiceButtons = buttonCounts.reduce((a, b) => a + b, 0);
+
+        const serviceButtonsOptions = {
+            chart: {
+                type: 'donut',
+                height: 350,
+                toolbar: { show: true }
+            },
+            series: buttonCounts,
+            labels: groups,
+            colors: ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b'],
+            dataLabels: { enabled: false },
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '65%',
+                        labels: {
+                            show: true,
+                            total: {
+                                show: true,
+                                label: 'Total',
+                                formatter: function() {
+                                    return totalServiceButtons;
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                style: {
+                    fontSize: '14px',
+                    color: '#fff'
+                },
+                y: {
+                    formatter: function(val) {
+                        return val + " Services";
+                    }
+                }
+            }
+        };
+
+        if (!serviceButtonsChart) {
+            serviceButtonsChart = new ApexCharts(serviceButtonsChartContainer, serviceButtonsOptions);
+            serviceButtonsChart.render();
+        } else {
+            serviceButtonsChart.updateOptions(serviceButtonsOptions);
+            serviceButtonsChart.updateSeries(buttonCounts);
+        }
+
+        //-------------------------------------------------------
+        // Chart 2: Total Users (Informational)
+        //-------------------------------------------------------
+        const totalUsersValue = data.total_users || 0;
+
+        const usersOptions = {
+            chart: {
+                type: 'radialBar',
+                height: 350,
+                toolbar: { show: false }
+            },
+            series: [100],
+            labels: ['Users'],
+            colors: ['#28a745'],
+            plotOptions: {
+                radialBar: {
+                    hollow: { size: '70%' },
+                    track: {
+                        background: '#eee',
+                        strokeWidth: '100%'
+                    },
+                    dataLabels: {
+                        name: {
+                            show: true,
+                            offsetY: -10,
+                            fontSize: '16px',
+                            color: '#888'
+                        },
+                        value: {
+                            show: true,
+                            fontSize: '28px',
+                            offsetY: 5,
+                            formatter: function() {
+                                return totalUsersValue + " Users";
+                            }
+                        }
+                    }
+                }
+            },
+            tooltip: {
+                enabled: false
+            }
+        };
+
+        if (!usersChart) {
+            usersChart = new ApexCharts(usersChartContainer, usersOptions);
+            usersChart.render();
+        } else {
+            usersChart.updateOptions(usersOptions);
+            usersChart.updateSeries([100]);
+        }
+
+        //-------------------------------------------------------
+        // Chart 3: ServiceButtons with CodeBase (Donut)
+        //-------------------------------------------------------
+        const codebaseExists = data.codebase_exists || 0;
+        const codebaseMissing = data.codebase_missing || 0;
+        const totalButtons = codebaseExists + codebaseMissing;
+
+        const codeBasesOptions = {
+            chart: {
+                type: 'donut',
+                height: 350,
+                toolbar: { show: true }
+            },
+            series: [codebaseExists, codebaseMissing],
+            labels: ['With CodeBase', 'Without CodeBase'],
+            colors: ['#28a745', '#dc3545'],
+            plotOptions: {
+                pie: {
+                    donut: {
+                        size: '65%',
+                        labels: {
+                            show: true,
+                            total: {
+                                show: true,
+                                label: 'Total',
+                                formatter: function () {
+                                    return totalButtons;
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                style: {
+                    fontSize: '14px',
+                    color: '#fff'
+                },
+                y: {
+                    formatter: function(val) {
+                        return val + " Services";
+                    }
+                }
+            }
+        };
+
+        if (!codeBasesChart) {
+            codeBasesChart = new ApexCharts(codeBasesChartContainer, codeBasesOptions);
+            codeBasesChart.render();
+        } else {
+            codeBasesChart.updateOptions(codeBasesOptions);
+            codeBasesChart.updateSeries([codebaseExists, codebaseMissing]);
+        }
+
+        //-------------------------------------------------------
+        // Chart 4: ServiceButtons per Location (Pie)
+        //-------------------------------------------------------
+        const locData = data.servicebuttons_per_location || [];
+        const locationLabels = locData.map(item => item.location);
+        const locationCounts = locData.map(item => item.count);
+
+        const locationOptions = {
+            chart: {
+                type: 'pie',
+                height: 350,
+                toolbar: { show: true }
+            },
+            series: locationCounts,
+            labels: locationLabels,
+            dataLabels: {
+                enabled: false
+            },
+            tooltip: {
+                theme: 'dark',
+                style: {
+                    fontSize: '14px',
+                    color: '#fff'
+                },
+                custom: function({ series, seriesIndex, dataPointIndex, w }) {
+                    const locName = w.globals.labels[seriesIndex];
+                    const count = series[seriesIndex];
+                    return `<div style="padding: 10px; color: #fff;">
+                                ${locName}: ${count} Services
+                            </div>`;
+                }
+            },
+            legend: {
+                position: 'right'
+            },
+            colors: ['#2f4b7c','#f95d6a','#ff7c43','#ffa600','#19d3f3','#ab63fa']
+        };
+
+        if (!locationChart) {
+            locationChart = new ApexCharts(locationChartContainer, locationOptions);
+            locationChart.render();
+        } else {
+            locationChart.updateOptions(locationOptions);
+            locationChart.updateSeries(locationCounts);
+        }
+    }
+
+    const initialData = {
+        servicebuttons_per_group: {{ servicebuttons_per_group|default:"[]"|safe }},
+        total_users: {{ total_users|default:0 }},
+        codebase_exists: {{ codebase_exists|default:0 }},
+        codebase_missing: {{ codebase_missing|default:0 }},
+        servicebuttons_per_location: {{ servicebuttons_per_location|default:"[]"|safe }}
+    };
+
+    initializeCharts(initialData);
+});
+</script>
+
+<style>
+  .apexcharts-tooltip {
+    background: #333 !important;
+    color: #fff !important;
+    border-radius: 4px !important;
+    border: 1px solid #888 !important;
+    opacity: 1 !important;
+  }
+  .apexcharts-tooltip * {
+    color: #fff !important;
+    font-size: 14px !important;
+  }
+</style>
+{% endblock %}

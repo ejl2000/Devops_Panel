@@ -1,0 +1,110 @@
+{% extends 'vertical_base.html' %}
+
+{% load static %}
+
+{% block title %}Leaflet{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'libs/leaflet/leaflet.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block page_content %}
+<div class="container-fluid">
+    <!-- Page-Title -->
+    <div class="row">
+        <div class="col-sm-12">
+            <div class="page-title-box">
+                <div class="float-end">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="#">Metrica</a></li>
+                        <li class="breadcrumb-item"><a href="#">Maps</a></li>
+                        <li class="breadcrumb-item active">Leaflet</li>
+                    </ol>
+                </div>
+                <h4 class="page-title">Leaflet</h4>
+            </div>
+            <!--end page-title-box-->
+        </div>
+        <!--end col-->
+    </div>
+    <!-- end page title end breadcrumb -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Leaflet Quick Start Guide</h4>
+                    <p class="text-muted mb-0">Example of Leaflet map.</p>  
+                </div><!--end card-header-->
+                <div class="card-body">   
+                    <div id="Leaf_default" class="" style="height: 400px"></div>        
+                </div><!--end card-body-->
+            </div> <!--end card-->
+        </div> <!-- end col -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Bounds Extend</h4>
+                    <p class="text-muted mb-0">Example of Leaflet map.</p>  
+                </div><!--end card-header-->
+                <div class="card-body">              
+                    <div id="Bounds_Extend" class="" style="height: 400px"></div>        
+                </div><!--end card-body-->
+            </div> <!--end card-->
+        </div> <!-- end col -->
+    </div> <!-- end row -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Vector Bounds</h4>
+                    <p class="text-muted mb-0">Example of Leaflet map.</p>  
+                </div><!--end card-header-->
+                <div class="card-body">              
+                    <div id="Vector_bounds" class="" style="height: 400px"></div>        
+                </div><!--end card-body-->
+            </div> <!--end card-->
+        </div> <!-- end col -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Moov Canvas</h4>
+                    <p class="text-muted mb-0">Example of Leaflet map.</p>  
+                </div><!--end card-header-->
+                <div class="card-body">              
+                    <div id="Moov_Canvas" class="" style="height: 400px"></div>        
+                </div><!--end card-body-->
+            </div> <!--end card-->
+        </div> <!-- end col -->
+    </div> <!-- end row -->
+    <div class="row">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Array Map</h4>
+                    <p class="text-muted mb-0">Example of Leaflet map.</p>  
+                </div><!--end card-header-->
+                <div class="card-body">       
+                    <div id="Array_Map" class="" style="height: 400px"></div>        
+                </div><!--end card-body-->
+            </div> <!--end card-->
+        </div> <!-- end col -->
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Simple Vector Map</h4>
+                    <p class="text-muted mb-0">Example of Leaflet map.</p>  
+                </div><!--end card-header-->
+                <div class="card-body">            
+                    <div id="V_Simple" class="" style="height: 400px"></div>        
+                </div><!--end card-body-->
+            </div> <!--end card-->
+        </div> <!-- end col -->
+    </div> <!-- end row -->
+
+</div><!-- container -->
+{% endblock %}
+
+{% block extra_javascript %}
+<script src="{% static 'libs/leaflet/leaflet.js' %}"></script> 
+<script src="{% static 'js/pages/leaflet-map.init.js' %}"></script> 
+{% endblock %}

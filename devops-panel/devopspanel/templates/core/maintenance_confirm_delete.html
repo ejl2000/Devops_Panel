@@ -1,0 +1,18 @@
+<!-- core/templates/core/maintenance_confirm_delete.html -->
+
+{% extends 'vertical_base.html' %}
+{% load static %}
+
+{% block title %}Delete Maintenance{% endblock %}
+
+{% block page_content %}
+<div class="container mt-5">
+    <h2>Delete Maintenance</h2>
+    <p>Are you sure you want to delete the maintenance event "{{ maintenance.title }}"?</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Confirm Delete</button>
+        <a href="{% url 'core:maintenance_list' %}" class="btn btn-secondary">Cancel</a>
+    </form>
+</div>
+{% endblock %}
